@@ -50,13 +50,21 @@ Use AskUserQuestion with free-text input for the token.
 
 Validate: token should start with `ntn_` or `secret_`. If not, ask again.
 
-### Step 4: Huntflow token
+### Step 4: Huntflow tokens
 
-«Теперь токен Хантфлоу. Найди его в 1Password: ищи "Huntflow API", скопируй токен.»
+«Теперь токены Хантфлоу. Найди их в 1Password: ищи "Huntflow API".»
 
+Ask for **access token** first:
+«Скопируй Access Token (он же Bearer-токен для запросов).»
 Use AskUserQuestion with free-text input.
 
-Also ask for `huntflow_account_id` (or get it from the team's shared config — ask the recruiter).
+Then ask for **refresh token**:
+«Теперь скопируй Refresh Token (он нужен для автоматического обновления доступа).»
+Use AskUserQuestion with free-text input.
+
+Then ask for `huntflow_account_id`:
+«И последнее — Account ID (числовой идентификатор аккаунта агентства).»
+Use AskUserQuestion with free-text input.
 
 ### Step 5: Save config
 
@@ -72,7 +80,8 @@ name: "<name from Team DB>"
 role: "<role from Team DB>"
 specialization: [<list from Team DB>]
 notion_token: "<token>"
-huntflow_token: "<token>"
+huntflow_access_token: "<access_token>"
+huntflow_refresh_token: "<refresh_token>"
 huntflow_account_id: "<account_id>"
 auto_upgrade: false
 EOF

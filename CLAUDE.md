@@ -25,6 +25,10 @@ Luna Stack is a set of Claude Code skills for the Luna Pastel recruiting agency.
 - `/handoff` — Transfer vacancy to another recruiter with structured summary
 - `/luna-upgrade` — Update skills via git pull, show what changed
 
+## Admin Skills
+
+- `/admin-audit` — Audit synchronization between Notion content and Luna Stack files (requires push access)
+
 ## Architecture Rules
 
 ### One Session = One Vacancy
@@ -106,7 +110,8 @@ name: "Имя Фамилия"
 role: "Recruiter"
 specialization: ["Tech", "FinTech"]
 notion_token: "ntn_..."
-huntflow_token: "..."
+huntflow_access_token: "..."
+huntflow_refresh_token: "..."
 huntflow_account_id: "..."
 auto_upgrade: false
 ```
