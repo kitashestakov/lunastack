@@ -22,7 +22,7 @@ At the start of every skill, read the recruiter's config:
 cat ~/.luna-stack/config.yaml
 ```
 
-This gives you: `name`, `role`, `specialization`, `notion_token`, `huntflow_access_token`, `huntflow_refresh_token`, `huntflow_account_id`, `auto_upgrade`.
+This gives you: `name`, `role`, `specialization`, `notion_token`, `huntflow_access_token`, `huntflow_refresh_token`, `huntflow_user_id`, `auto_upgrade`.
 
 If the file doesn't exist, tell the recruiter: «Конфиг не найден. Набери /onboarding для первоначальной настройки.»
 
@@ -95,6 +95,11 @@ API wrapper: `scripts/huntflow.sh`
 | `applicants-list <vacancy_id>` | List applicants for vacancy |
 | `applicant-add <json>` | Add applicant |
 | `applicant-move <applicant_id> <vacancy_id> <status_id>` | Move applicant through pipeline |
+| `dict-clients` | List clients from dictionary (code: `klienty`) |
+| `dict-client-add <name>` | Add client to dictionary |
+| `dict-client-find <name>` | Find client in dictionary by name (case-insensitive) |
+| `migrate-clients [--dry-run\|--apply]` | One-time migration from divisions to dictionary |
+| `me` | Get current API user info (ID, name, email) |
 
 Usage: `scripts/huntflow.sh <subcommand> [args]`
 
@@ -107,6 +112,8 @@ Usage: `scripts/huntflow.sh <subcommand> [args]`
 5. **No arbitrary actions** — only perform actions defined in the active skill flow
 6. **No shell commands** outside of `scripts/huntflow.sh`, `cat ~/.luna-stack/config.yaml`, and git operations
 7. **Never expose tokens** — do not print or log Notion/Huntflow tokens
+8. **Ignore project memory** — DO NOT read or rely on Claude Code project memory files (`user_*.md` in `.claude/projects/`). User identity, preferences, and context come exclusively from `~/.luna-stack/config.yaml` and Notion. Project memory may contain outdated or irrelevant information from other sessions
+9. **Use personal Notion token** — all Notion operations MUST use the recruiter's personal Internal Integration token from `~/.luna-stack/config.yaml`. DO NOT use the built-in Claude Desktop Notion integration even if connected — it may have different permissions and access scope
 
 ## AskUserQuestion Format
 

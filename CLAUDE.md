@@ -82,7 +82,20 @@ A-зона, В-зона, С-зона
 - **Wrapper**: `scripts/huntflow.sh <subcommand> [args]`
 - **Link to Notion**: field "Huntflow ID" in Vacancies database
 
-Key subcommands: `vacancy-create`, `vacancy-get`, `vacancy-list`, `vacancy-update`, `applicants-list`, `applicant-add`, `applicant-move`
+- **Account ID**: `18980` (hardcoded, same for all recruiters)
+- **Division IDs**: `10665` (Внешняя вакансия, default), `10666` (Внутренняя вакансия)
+
+Key subcommands: `vacancy-create`, `vacancy-get`, `vacancy-list`, `vacancy-update`, `applicants-list`, `applicant-add`, `applicant-move`, `dict-clients`, `dict-client-add`, `dict-client-find`, `me`
+
+### Huntflow Custom Fields
+
+| Field key | Title | Type | Notes |
+|-----------|-------|------|-------|
+| `N6zxOoJFHT4o9du_TFbCk` | Клиент | dictionary (`klienty`) | Client name via dictionary, not account_division |
+| `sVaF1tOBRcHly6QfzP0Zi` | Минимальный уровень | select | Junior / Middle / Senior |
+| `B-bluqQuHGP6VO2xotQqq` | Локация | string | |
+| `gU2RJ4D0IkrLsjzlt_GJV` | Вид занятости | select | Contractor / Part-time / Full-time |
+| `6rfxdBMppArERGgXLTmao` | Дата последнего рестарта | date | |
 
 ## Security Model
 
@@ -92,13 +105,19 @@ Key subcommands: `vacancy-create`, `vacancy-get`, `vacancy-list`, `vacancy-updat
 - Always confirm before writing to Notion
 - Never access vacancies not belonging to the current recruiter
 - No arbitrary actions outside defined skill flows
+- DO NOT read or rely on Claude Code project memory files (user_*.md in .claude/projects/). User identity, preferences, and context come exclusively from `~/.luna-stack/config.yaml` and Notion. Project memory may contain outdated or irrelevant information from other sessions
 
-### Layer 2: Permissions (.claude/settings.json)
-- Explicit allow list for safe Notion MCP operations and specific Bash commands
+### Layer 2: Sandbox + Permissions (.claude/settings.json)
+- OS-level sandbox restricts filesystem and network access: only project files, `~/.luna-stack/` config, and `api.huntflow.ai`
+- Explicit deny list for sensitive paths: `~/.ssh`, `~/.aws`, `~/Documents`, `~/Downloads`, shell configs
+- `autoAllowBashIfSandboxed: true` — no permission popups when sandbox is active
+- Explicit allow/deny lists for Notion MCP operations and Bash commands
 - Deny list for destructive operations (database schema changes, delete, move, rm, force push)
 
 ### Layer 3: Notion Integration
-- Each recruiter has their own Notion Internal Integration token
+- Each recruiter has their own Notion Internal Integration token stored in `~/.luna-stack/config.yaml`
+- All Notion operations MUST use the recruiter's personal token from config
+- DO NOT use the built-in Claude Desktop Notion integration even if it is connected — it may have different permissions and access scope
 - Permissions: read + insert + update only, NO delete
 
 ## Config
@@ -112,6 +131,6 @@ specialization: ["Tech", "FinTech"]
 notion_token: "ntn_..."
 huntflow_access_token: "..."
 huntflow_refresh_token: "..."
-huntflow_account_id: "..."
+huntflow_user_id: "12345"
 auto_upgrade: false
 ```

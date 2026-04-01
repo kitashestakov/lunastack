@@ -34,5 +34,16 @@
       "Bash(curl *)",
       "Bash(wget *)"
     ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "filesystem": {
+      "allowRead": ["~/.luna-stack"],
+      "denyRead": ["~/.ssh", "~/.aws", "~/.gnupg", "~/.config/gcloud", "~/Documents", "~/Desktop", "~/Downloads", "~/.env", "~/.zshrc", "~/.bashrc", "~/.bash_profile", "~/.netrc", "~/.npmrc"]
+    },
+    "network": {
+      "allowedDomains": ["api.huntflow.ai"]
+    }
   }
 }

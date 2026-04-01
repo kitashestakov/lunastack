@@ -40,10 +40,12 @@ set_config() {
 
 ACCESS_TOKEN=$(get_config "huntflow_access_token")
 REFRESH_TOKEN=$(get_config "huntflow_refresh_token")
-ACCOUNT_ID=$(get_config "huntflow_account_id")
+ACCOUNT_ID="18980"
+DIV_EXTERNAL="10665"  # Внешняя вакансия
+DIV_INTERNAL="10666"  # Внутренняя вакансия
 
-if [ -z "$ACCESS_TOKEN" ] || [ -z "$ACCOUNT_ID" ]; then
-  echo "Ошибка: huntflow_access_token или huntflow_account_id не заданы в конфиге." >&2
+if [ -z "$ACCESS_TOKEN" ]; then
+  echo "Ошибка: huntflow_access_token не задан в конфиге." >&2
   exit 1
 fi
 
@@ -155,6 +157,18 @@ _do_request() {
 
 cmd_vacancy_create() {
   local json="$1"
+  local vtype="${2:-external}"
+
+  # Inject account_division if not already in JSON
+  if ! echo "$json" | grep -q '"account_division"'; then
+    local div_id="$DIV_EXTERNAL"
+    if [ "$vtype" = "internal" ]; then
+      div_id="$DIV_INTERNAL"
+    fi
+    # Insert account_division into JSON object
+    json=$(echo "$json" | sed "s/^{/{\"account_division\": ${div_id}, /")
+  fi
+
   hf_request POST "/vacancies" "$json"
 }
 
@@ -204,6 +218,251 @@ cmd_applicant_move() {
   hf_request POST "/applicants/${applicant_id}/vacancy" "$json"
 }
 
+cmd_me() {
+  hf_request GET "/users/me"
+}
+
+# --- Dictionary (Клиенты) subcommands ---
+# Dictionary code: "klienty"
+# Vacancy custom field key: "N6zxOoJFHT4o9du_TFbCk"
+# Agency divisions endpoint: /divisions (maps account_division ID → client name)
+
+DICT_CODE="klienty"
+CLIENT_FIELD_KEY="N6zxOoJFHT4o9du_TFbCk"
+
+cmd_dict_clients() {
+  local raw
+  raw=$(hf_request GET "/dictionaries/${DICT_CODE}")
+  # Extract fields array entries: each has id, name, foreign, deep, active
+  # Output: one JSON object per line for easy parsing
+  local fields
+  fields=$(echo "$raw" | sed 's/.*"fields":\[/[/' | sed 's/\],.*/]/')
+  echo "$fields"
+}
+
+cmd_dict_client_add() {
+  local name="$1"
+  local foreign
+  foreign=$(echo "$name" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | sed 's/[^a-zA-Z0-9_-]//g')
+
+  # PUT replaces the entire dictionary. Fetch current items, append new one.
+  local current_raw
+  current_raw=$(hf_request GET "/dictionaries/${DICT_CODE}")
+
+  # Extract existing items as {foreign, name} pairs for the PUT payload
+  local existing_items
+  existing_items=$(echo "$current_raw" | sed 's/.*"fields":\[//' | sed 's/\],.*//' | \
+    grep -oE '\{[^{}]*\}' | \
+    while IFS= read -r entry; do
+      local ename eforeign
+      ename=$(echo "$entry" | grep -o '"name":"[^"]*"' | head -1 | sed 's/"name":"//;s/"//')
+      eforeign=$(echo "$entry" | grep -o '"foreign":"[^"]*"' | head -1 | sed 's/"foreign":"//;s/"//')
+      [ -n "$ename" ] && echo "{\"foreign\": \"${eforeign}\", \"name\": \"${ename}\"}"
+    done | tr '\n' ',' | sed 's/,$//' || true)
+
+  local new_item="{\"foreign\": \"${foreign}\", \"name\": \"${name}\"}"
+
+  local items
+  if [ -z "$existing_items" ]; then
+    items="[${new_item}]"
+  else
+    items="[${existing_items}, ${new_item}]"
+  fi
+
+  hf_request PUT "/dictionaries/${DICT_CODE}" "{\"code\": \"${DICT_CODE}\", \"name\": \"Клиенты\", \"items\": ${items}}"
+}
+
+cmd_dict_client_find() {
+  local search_name="$1"
+  local search_lower
+  search_lower=$(echo "$search_name" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+  local dict_raw
+  dict_raw=$(hf_request GET "/dictionaries/${DICT_CODE}")
+
+  # Parse fields array — each entry has "id", "name", "foreign"
+  local found=""
+  while IFS= read -r entry; do
+    [ -z "$entry" ] && continue
+    local entry_name
+    entry_name=$(echo "$entry" | grep -o '"name":"[^"]*"' | head -1 | sed 's/"name":"//;s/"//')
+    local entry_lower
+    entry_lower=$(echo "$entry_name" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    if [ "$entry_lower" = "$search_lower" ]; then
+      local entry_id
+      entry_id=$(echo "$entry" | grep -o '"id":[0-9]*' | head -1 | sed 's/"id"://')
+      echo "{\"id\": ${entry_id}, \"name\": \"${entry_name}\"}"
+      found="yes"
+      break
+    fi
+  done <<< "$(echo "$dict_raw" | sed 's/.*"fields":\[//' | sed 's/\],.*//' | grep -oE '\{[^{}]*\}')"
+
+  if [ -z "$found" ]; then
+    echo "Клиент \"${search_name}\" не найден в справочнике." >&2
+    return 1
+  fi
+}
+
+# --- Migration ---
+
+cmd_migrate_clients() {
+  local mode="${1:---dry-run}"
+
+  echo "=== Миграция клиентов в справочник ==="
+  echo ""
+
+  # 1. Fetch dictionary
+  echo "Загружаю справочник клиентов..." >&2
+  local dict_raw
+  dict_raw=$(hf_request GET "/dictionaries/${DICT_CODE}")
+
+  # 2. Fetch divisions (old client structure)
+  echo "Загружаю divisions (старая структура клиентов)..." >&2
+  local divisions
+  divisions=$(hf_request GET "/divisions")
+
+  # 3. Fetch ALL vacancies (with pagination)
+  echo "Загружаю все вакансии..." >&2
+  local page=1
+  local total_pages=1
+  local total=0
+  local all_vids=""
+
+  while [ "$page" -le "$total_pages" ]; do
+    local page_data
+    page_data=$(hf_request GET "/vacancies?page=${page}&count=30")
+    if [ "$page" -eq 1 ]; then
+      total=$(echo "$page_data" | grep -o '"total_items":[0-9]*' | sed 's/"total_items"://')
+      total_pages=$(echo "$page_data" | grep -o '"total_pages":[0-9]*' | sed 's/"total_pages"://')
+      echo "Найдено вакансий: ${total} (страниц: ${total_pages})" >&2
+    fi
+    local page_vids
+    page_vids=$(echo "$page_data" | grep -oE '"id":[0-9]+,"created"' | sed 's/,"created"//;s/"id"://')
+    all_vids="${all_vids}${all_vids:+
+}${page_vids}"
+    page=$((page + 1))
+  done
+  echo "" >&2
+
+  # Helper: resolve division ID to name
+  _div_name() {
+    local div_id="$1"
+    local result
+    result=$(echo "$divisions" | grep -oE "\"id\":${div_id}[^}]*" | grep -o '"name":"[^"]*"' | sed 's/"name":"//;s/"//' || true)
+    echo "$result"
+  }
+
+  # Helper: find client in dictionary by name (case-insensitive)
+  _dict_find() {
+    local search="$1"
+    local search_lower
+    search_lower=$(echo "$search" | tr '[:upper:]' '[:lower:]')
+    local entries
+    entries=$(echo "$dict_raw" | sed 's/.*"fields":\[//' | sed 's/\],.*//' | grep -oE '\{[^{}]*\}' || true)
+    [ -z "$entries" ] && return 0
+    echo "$entries" | while IFS= read -r entry; do
+      local ename
+      ename=$(echo "$entry" | grep -o '"name":"[^"]*"' | head -1 | sed 's/"name":"//;s/"//')
+      local elower
+      elower=$(echo "$ename" | tr '[:upper:]' '[:lower:]')
+      if [ "$elower" = "$search_lower" ]; then
+        echo "$entry"
+        return 0
+      fi
+    done
+  }
+
+  echo "ID | Позиция | Division | Клиент | Dict field | Статус"
+  echo "---|---------|----------|--------|------------|-------"
+
+  for vid in $all_vids; do
+    [ -z "$vid" ] && continue
+    local vdata
+    vdata=$(hf_request GET "/vacancies/${vid}" 2>/dev/null)
+
+    local position
+    position=$(echo "$vdata" | grep -o '"position":"[^"]*"' | sed 's/"position":"//;s/"//')
+
+    local division
+    division=$(echo "$vdata" | grep -o '"account_division":[0-9]*' | sed 's/"account_division"://')
+
+    local dict_value
+    dict_value=$(echo "$vdata" | grep -o "\"${CLIENT_FIELD_KEY}\":[^,}]*" | sed "s/\"${CLIENT_FIELD_KEY}\"://")
+
+    # Resolve division to client name
+    local client_name=""
+    if [ -n "$division" ] && [ "$division" != "null" ]; then
+      client_name=$(_div_name "$division")
+    fi
+
+    if [ "$dict_value" != "null" ] && [ -n "$dict_value" ]; then
+      echo "${vid} | ${position} | ${division} | ${client_name:-(unknown)} | ${dict_value} | уже заполнено"
+      continue
+    fi
+
+    if [ -z "$client_name" ]; then
+      echo "${vid} | ${position} | ${division} | (не найден) | null | пропущено — нет имени клиента"
+      continue
+    fi
+
+    # Skip placeholder client names
+    case "$client_name" in
+      *"Нужно добавить"*|*"нужно добавить"*|*"TODO"*|*"todo"*)
+        echo "${vid} | ${position} | ${division} | ${client_name} | null | пропущено — заглушка"
+        continue
+        ;;
+    esac
+
+    # Check if client exists in dictionary
+    local dict_entry
+    dict_entry=$(_dict_find "$client_name")
+
+    if [ "$mode" = "--apply" ]; then
+      # Add to dictionary if not found
+      if [ -z "$dict_entry" ]; then
+        echo "  → Добавляю клиента '${client_name}' в справочник..." >&2
+        cmd_dict_client_add "$client_name" > /dev/null 2>&1
+        # Dictionary update is async — wait briefly then re-fetch
+        sleep 2
+        dict_raw=$(hf_request GET "/dictionaries/${DICT_CODE}" 2>/dev/null)
+        dict_entry=$(_dict_find "$client_name")
+      fi
+
+      if [ -n "$dict_entry" ]; then
+        local dict_id
+        dict_id=$(echo "$dict_entry" | grep -o '"id":[0-9]*' | head -1 | sed 's/"id"://')
+        # PUT requires position and account_division — pass them through from existing data
+        hf_request PUT "/vacancies/${vid}" "{\"position\": \"${position}\", \"account_division\": ${division}, \"${CLIENT_FIELD_KEY}\": ${dict_id}}" > /dev/null 2>&1
+        echo "${vid} | ${position} | ${division} | ${client_name} | → ${dict_id} | мигрировано"
+      else
+        echo "${vid} | ${position} | ${division} | ${client_name} | null | ошибка — не удалось найти в справочнике"
+      fi
+    else
+      local dict_status="не найден → будет создан"
+      if [ -n "$dict_entry" ]; then
+        dict_status="найден"
+      fi
+      echo "${vid} | ${position} | ${division} | ${client_name} | null | нужна миграция (${dict_status})"
+    fi
+  done
+
+  echo ""
+  if [ "$mode" = "--dry-run" ]; then
+    echo "=== DRY RUN — изменения не внесены ==="
+    echo "Для применения: scripts/huntflow.sh migrate-clients --apply"
+  else
+    echo "=== Миграция завершена ==="
+  fi
+}
+
+# Generic endpoint for discovery/debugging
+cmd_raw() {
+  local method="$1"
+  local endpoint="$2"
+  local data="${3:-}"
+  hf_request "$method" "$endpoint" "$data"
+}
+
 # --- Main ---
 
 usage() {
@@ -213,13 +472,18 @@ Luna Stack — Huntflow API wrapper
 Использование: scripts/huntflow.sh <команда> [аргументы]
 
 Команды:
-  vacancy-create <json>                    Создать вакансию
+  vacancy-create <json> [external|internal] Создать вакансию (default: external)
   vacancy-get <vacancy_id>                 Получить данные вакансии
   vacancy-list [--mine] [--opened]         Список вакансий
   vacancy-update <vacancy_id> <json>       Обновить вакансию
   applicants-list <vacancy_id>             Список кандидатов по вакансии
   applicant-add <json>                     Добавить кандидата
   applicant-move <applicant_id> <vacancy_id> <status_id>  Переместить кандидата
+  dict-clients                             Список клиентов из справочника
+  dict-client-add <name>                   Добавить клиента в справочник
+  dict-client-find <name>                  Найти клиента в справочнике по имени
+  migrate-clients [--dry-run|--apply]      Миграция клиентов в справочник
+  me                                       Текущий пользователь API
 EOF
 }
 
@@ -239,6 +503,12 @@ case "$SUBCOMMAND" in
   applicants-list)  cmd_applicants_list "$@" ;;
   applicant-add)    cmd_applicant_add "$@" ;;
   applicant-move)   cmd_applicant_move "$@" ;;
+  dict-clients)     cmd_dict_clients ;;
+  dict-client-add)  cmd_dict_client_add "$@" ;;
+  dict-client-find) cmd_dict_client_find "$@" ;;
+  migrate-clients)  cmd_migrate_clients "$@" ;;
+  me)               cmd_me ;;
+  raw)              cmd_raw "$@" ;;
   *)
     echo "Неизвестная команда: $SUBCOMMAND" >&2
     usage

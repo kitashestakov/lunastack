@@ -30,14 +30,14 @@ If YES and it's the SAME vacancy, show the current status (skip to Step 3).
 cat ~/.luna-stack/config.yaml
 ```
 
-Extract recruiter name, specialization, huntflow_account_id.
+Extract recruiter name, specialization, huntflow_user_id.
 
 ## Step 2: Identify the Vacancy
 
 Use AskUserQuestion:
 - question: «С какой вакансией работаем? Напиши название клиента и позицию.»
 - header: "Вакансия"
-- Let the recruiter type freely (no predefined options needed — use 2 options like "Новая вакансия" and a placeholder, but the recruiter will likely type in "Other")
+- Let the recruiter type freely (use 2 placeholder options, but the recruiter will type their answer in "Type something else")
 
 Parse the response to extract: client name, position title.
 
@@ -98,6 +98,7 @@ mcp__claude_ai_Notion__notion-fetch
 scripts/huntflow.sh vacancy-get <huntflow_id>
 scripts/huntflow.sh applicants-list <huntflow_id>
 ```
+   From vacancy-get response, read client name from custom field `N6zxOoJFHT4o9du_TFbCk` (dictionary object with `id` and `name`).
 
 4. Show combined summary to the recruiter:
 
@@ -132,7 +133,7 @@ Map status to stage and offer contextual options:
    «Вакансия [Client] — [Position] не найдена. Создаём новую?»
    Options: "Создать (Рекомендуется)" / "Поискать ещё раз" / "Отмена"
 
-2. If creating, first search/create the Client in the Clients database using the same fuzzy strategy:
+2. **Find or create Client in Notion** using fuzzy strategy:
 
 **Pass 1 — exact query:**
 ```
@@ -149,28 +150,53 @@ Search with a broader query (first word of the client name, or partial match) an
 - question: «Клиент "[client name]" не найден. Возможно, он записан иначе. Вот похожие — есть ли нужный?»
 - options: up to 4 matching clients + "Создать нового клиента"
 
-If client not found and recruiter confirms — create it.
+If client not found and recruiter confirms — create it in Notion.
 
-3. Create vacancy in Notion:
+3. **Find or create Client in Huntflow dictionary:**
+```bash
+scripts/huntflow.sh dict-client-find "<Client Name>"
+```
+If found — save the dictionary value `id` for use in Step 5.
+If not found — add to dictionary:
+```bash
+scripts/huntflow.sh dict-client-add "<Client Name>"
+```
+Then find again to get the ID:
+```bash
+scripts/huntflow.sh dict-client-find "<Client Name>"
+```
+
+4. **Create vacancy in Notion:**
 ```
 mcp__claude_ai_Notion__notion-create-pages
   parent: { type: "data_source_id", data_source_id: "32ef9167-2e00-8102-ba94-000b387a05bb" }
   pages: [{
     properties: {
       "Вакансия": "<Position> — <Client>",
-      "Статус": "Client Review",
+      "Статус": "Active Search",
       "Тип": "External",
       "Рекрутер": "<recruiter relation ID>"
     }
   }]
 ```
 
-4. Create vacancy in Huntflow:
+5. **Create vacancy in Huntflow** with client dictionary field and fill quotas:
+
+Determine vacancy type from the Notion "Тип" field:
+- If "External" (or not set) → pass `external` (default, uses Внешняя вакансия division)
+- If "Internal" → pass `internal` (uses Внутренняя вакансия division)
+
 ```bash
-scripts/huntflow.sh vacancy-create '{"position": "<Position>", "company": "<Client>"}'
+scripts/huntflow.sh vacancy-create '{"position": "<Position>", "fill_quotas": [{"applicants_to_hire": 1}], "N6zxOoJFHT4o9du_TFbCk": <dict_client_id>}' external
+```
+Note: `N6zxOoJFHT4o9du_TFbCk` is the custom field key for "Клиент" (dictionary type). The value is the dictionary entry `id` (integer). The second argument (`external`/`internal`) sets the division automatically.
+
+6. **Assign recruiter to vacancy in Huntflow** (using `huntflow_user_id` from config):
+```bash
+scripts/huntflow.sh vacancy-update <new_vacancy_id> '{"coworkers": [<huntflow_user_id from config>]}'
 ```
 
-5. Write Huntflow ID back to Notion card:
+7. **Write Huntflow ID back to Notion card:**
 ```
 mcp__claude_ai_Notion__notion-update-page
   page_id: "<new page ID>"
@@ -178,7 +204,7 @@ mcp__claude_ai_Notion__notion-update-page
   properties: { "Huntflow ID": <huntflow_vacancy_id> }
 ```
 
-6. Look up recruiter in Team database to set the relation:
+8. **Look up recruiter in Team database** to set the relation:
 ```
 mcp__claude_ai_Notion__notion-search
   query: "<recruiter name from config>"
@@ -189,13 +215,15 @@ mcp__claude_ai_Notion__notion-search
 
 ## Step 4: Session Naming
 
-After the vacancy is identified/created, ask the recruiter to rename the session:
+After the vacancy is identified/created, display as plain text (NOT via AskUserQuestion):
 
-«Переименуй эту сессию для удобства. Набери:
+«Переименуй эту сессию. Напиши в чат (не в "Type something else", а прямо в поле ввода сообщения):
 
-`/rename [Client] — [Position] (месяц год)`
+/rename [Client] — [Position] (месяц год)
 
-Например: `/rename TechCorp — Frontend Dev (март 2026)`»
+Например: /rename TechCorp — Frontend Dev (март 2026)»
+
+Wait for the recruiter to type the /rename command. Do not proceed until they confirm or skip.
 
 ## Step 5: Next Actions
 
