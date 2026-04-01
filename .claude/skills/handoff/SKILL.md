@@ -19,7 +19,7 @@ If not: «Сначала набери /vacancy, чтобы выбрать вак
 ## Step 1: Identify New Recruiter
 
 Use AskUserQuestion:
-- question: «Кому передаём вакансию?»
+- question: «Кому передаем вакансию?»
 - header: "Рекрутер"
 - Let the recruiter type the name
 

@@ -28,12 +28,12 @@ If not: «Сначала набери /vacancy, чтобы выбрать вак
    - If NO research results:
 
    Use AskUserQuestion:
-   - question: «В карточке вакансии нет результатов ресёрча. Ресёрч — основа для качественного описания: данные о компании, рынке и конкурентах помогут сделать текст убедительнее. Запустить /research сначала?»
-   - header: "Ресёрч"
+   - question: «В карточке вакансии нет результатов ресерча. Ресерч — основа для качественного описания: данные о компании, рынке и конкурентах помогут сделать текст убедительнее. Запустить /research сначала?»
+   - header: "Ресерч"
    - options:
      - label: "Запустить /research (Рекомендуется)"
-       description: "Соберу данные о компании, рынке и зарплатах — это займёт пару минут"
-     - label: "Продолжить без ресёрча"
+       description: "Соберу данные о компании, рынке и зарплатах — это займет пару минут"
+     - label: "Продолжить без ресерча"
        description: "Оформлю описания на основе того, что есть в карточке"
 
    If recruiter chooses research: read `.claude/skills/research/SKILL.md` and execute the /research flow, then return here.
@@ -48,6 +48,8 @@ mcp__claude_ai_Notion__notion-fetch
 
 If the page has content — follow its structure, rules, and format strictly.
 If the page is blank — use the default structure defined in Steps 3 and 4 below.
+
+<!-- TODO: fill Notion page 2eaf91672e008025a2fbf9cb878d5d8e with formatting guidelines -->
 
 ## Step 3: Generate External Description
 
@@ -77,7 +79,7 @@ Present the external description to the recruiter.
 ## Step 4: Review External Description
 
 Use AskUserQuestion:
-- question: «Внешнее описание готово. Проверь — оно пойдёт кандидатам в Telegram/LinkedIn. Что-то поправить?»
+- question: «Внешнее описание готово. Проверь — оно пойдет кандидатам в Telegram/LinkedIn. Что-то поправить?»
 - header: "Внешнее описание"
 - options:
   - label: "Всё отлично (Рекомендуется)"
@@ -85,7 +87,7 @@ Use AskUserQuestion:
   - label: "Поправить тон"
     description: "Скажи, что изменить — сделаю формальнее/неформальнее"
   - label: "Другой акцент"
-    description: "Скажи, на чём сфокусироваться — задачи, стек, условия"
+    description: "Скажи, на чем сфокусироваться — задачи, стек, условия"
   - label: "Переписать"
     description: "Сгенерирую новый вариант с нуля"
 
@@ -101,7 +103,7 @@ Compose the internal position profile — a detailed document for the recruiting
 - **Позиция:** [название]
 - **Компания / клиент:** [название]
 - **Грейд:** [junior / middle / senior / lead]
-- **Локация / формат:** [офис / гибрид / удалённо, город]
+- **Локация / формат:** [офис / гибрид / удаленно, город]
 - **Вилка:** [диапазон]
 
 ### ✅ Must-have (обязательные требования)
@@ -113,7 +115,7 @@ Compose the internal position profile — a detailed document for the recruiting
 - [Требование 1]
 - ...
 
-### 🔑 Bottlenecks (ключевые навыки — на чём отсеивается большинство)
+### 🔑 Bottlenecks (ключевые навыки — на чем отсеивается большинство)
 - [Навык/компетенция 1 — почему это bottleneck]
 - [Навык/компетенция 2]
 
@@ -121,7 +123,7 @@ Compose the internal position profile — a detailed document for the recruiting
 - [Сигнал 1]
 - ...
 
-### 🔴 Red flags (сигналы, что кандидат не подойдёт)
+### 🔴 Red flags (сигналы, что кандидат не подойдет)
 - [Сигнал 1]
 - ...
 
@@ -131,7 +133,7 @@ Compose the internal position profile — a detailed document for the recruiting
 
 **Rules:**
 - Bottlenecks — самые важные: это то, что отличает подходящего кандидата от неподходящего. Выделяй 2-4 ключевых.
-- Green/red flags должны быть конкретными и проверяемыми на скрининге, а не абстрактными («мотивирован» — плохо, «ушёл с прошлого места из-за потолка роста и ищет лидерскую роль» — хорошо)
+- Green/red flags должны быть конкретными и проверяемыми на скрининге, а не абстрактными («мотивирован» — плохо, «ушел с прошлого места из-за потолка роста и ищет лидерскую роль» — хорошо)
 - Must-have vs nice-to-have: если сомневаешься — спроси рекрутера
 
 ## Step 6: Review Internal Description

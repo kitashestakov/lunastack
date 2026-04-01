@@ -21,12 +21,12 @@ If not: «Сначала набери /vacancy, чтобы выбрать вак
 
 1. Fetch the vacancy card from Notion — extract position, company, key requirements, selling points.
 
-2. Fetch the outreach guide from Notion:
+2. Fetch the outreach norms directly from Notion:
 ```
 mcp__claude_ai_Notion__notion-fetch
-  id: "2eaf91672e0080d2a7eafc2819c79f7b"
+  id: "2eaf91672e0080199eb5d4f974cc6f5a"
 ```
-Navigate to the outreach/messaging section. Read tone, structure, and anti-patterns.
+Read tone, structure, CDI-based personalization levels, follow-up cadence, channel guidelines, and anti-patterns.
 
 ## Step 2: Gather Candidate Context
 
@@ -82,6 +82,6 @@ Use AskUserQuestion:
   - "Всё отлично, беру" — done
   - "Поправить тон" — ask what to adjust
   - "Другой акцент" — ask what to emphasize differently
-  - "Ещё варианты" — generate alternatives
+  - "Еще варианты" — generate alternatives
 
 Iterate until the recruiter is satisfied.

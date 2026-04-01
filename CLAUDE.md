@@ -52,6 +52,12 @@ All questions to the recruiter follow this structure:
 
 Never ask open-ended "что ты хочешь сделать?" — always propose specific next steps.
 
+### Typography (Russian text)
+1. Never use the letter ё, EXCEPT where meaning changes (все vs всё, всем vs всём). In all other cases use е
+2. Russian quotation marks: always use «елочки», never "лапки"
+3. English words inside Russian text: use "double quotes"
+4. Never mix: «English» is wrong, "русский" is wrong
+
 ## Notion
 
 ### Databases
@@ -115,10 +121,10 @@ Key subcommands: `vacancy-create`, `vacancy-get`, `vacancy-list`, `vacancy-updat
 - Deny list for destructive operations (database schema changes, delete, move, rm, force push)
 
 ### Layer 3: Notion Integration
-- Each recruiter has their own Notion Internal Integration token stored in `~/.luna-stack/config.yaml`
-- All Notion operations MUST use the recruiter's personal token from config
-- DO NOT use the built-in Claude Desktop Notion integration even if it is connected — it may have different permissions and access scope
-- Permissions: read + insert + update only, NO delete
+- Notion access is via the built-in Claude Desktop Notion MCP connector (OAuth)
+- Recruiters connect their Notion account during /onboarding (Settings → Connectors → Notion)
+- Permissions are controlled by what pages are shared with the Notion connection
+- Read + insert + update only, NO delete
 
 ## Config
 
@@ -128,7 +134,6 @@ Key subcommands: `vacancy-create`, `vacancy-get`, `vacancy-list`, `vacancy-updat
 name: "Имя Фамилия"
 role: "Recruiter"
 specialization: ["Tech", "FinTech"]
-notion_token: "ntn_..."
 huntflow_access_token: "..."
 huntflow_refresh_token: "..."
 huntflow_user_id: "12345"

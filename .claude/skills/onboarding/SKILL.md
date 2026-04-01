@@ -2,8 +2,8 @@
 name: onboarding
 description: |
   One-time setup for a new Luna Pastel team member. Identifies the recruiter
-  in the Team database, saves Notion and Huntflow tokens to local config,
-  explains model/permission setup, and introduces available commands.
+  in the Team database, saves Huntflow tokens to local config, explains
+  model setup, and introduces available commands.
   Use when: first time setup, "настройка", "онбординг".
 ---
 
@@ -14,97 +14,59 @@ Read the file `ETHOS.md` for tone of voice guidance.
 
 This skill runs ONCE per recruiter to set up their Luna Stack environment.
 
+**IMPORTANT: Do NOT use AskUserQuestion for steps that require free text input or external actions.** Only use AskUserQuestion for predefined-option choices (like «Это ты?» confirmation). For everything else — output plain text and wait for the user to type their response directly in the chat.
+
 ## Flow
 
 ### Step 1: Greeting
 
-Greet the recruiter in Russian. Briefly explain what Luna Stack is:
+Greet the recruiter in Russian. Briefly explain what Luna Stack is and note that the security environment is pre-configured:
 
-«Привет! Я — твой рекрутинговый ассистент Luna Stack. Помогаю с вакансиями, подготовкой к брифингам, ресёрчем, аутричем и скринингом кандидатов. Давай настроим всё за пару минут.»
+«Привет! Я — твой рекрутинговый ассистент Luna Stack. Помогаю с вакансиями, подготовкой к брифингам, ресерчем, аутричем и скринингом кандидатов.
+
+Твоя рабочая среда уже настроена в безопасном режиме — я могу работать только с файлами проекта Luna Stack и не имею доступа к твоим личным файлам, паролям или документам.
+
+Давай настроим все за пару минут.»
 
 ### Step 2: Switch to Opus
 
-Display as plain text (NOT AskUserQuestion):
+Output as plain text, then STOP and wait for the user to reply:
 
 «Переключи модель на Claude Opus 4.6:
 → В правом нижнем углу нажми на название текущей модели и выбери "Claude Opus 4.6"
 
-Когда сделаешь — напиши "Готово" в поле "Type something else".»
+Когда сделаешь — напиши «Готово».»
 
-Use AskUserQuestion:
-- question: «Переключил модель?»
-- header: "Модель"
-- options:
-  - "Готово" — placeholder; the recruiter confirms in "Type something else"
+Wait for the user to type «Готово» (or any confirmation) in the chat input. Do NOT use AskUserQuestion.
 
-### Step 3: Enable sandbox
+### Step 3: Connect Notion
 
-Display as plain text (NOT AskUserQuestion):
+Output as plain text, then STOP and wait:
 
-«Теперь настроим безопасную среду. Набери в чате (не в "Type something else", а прямо в поле ввода сообщения):
+«Подключи Notion к Claude Desktop:
+→ Открой настройки Claude Desktop (⌘ + ,)
+→ Перейди в раздел "Connectors" (или "Integrations")
+→ Найди Notion → нажми "Connect"
+→ Выбери workspace Luna Pastel и дай доступ
 
-/sandbox
+Когда подключишь — напиши «Готово».»
 
-В появившемся меню выбери "Auto-allow" — это позволит мне работать без постоянных подтверждений, но только внутри безопасной песочницы. Я не смогу читать твои личные файлы, пароли или документы — только файлы проекта Luna Stack.
+Wait for confirmation. Do NOT use AskUserQuestion.
 
-Когда сделаешь — напиши "Готово" в поле "Type something else".»
-
-Use AskUserQuestion:
-- question: «Включил sandbox?»
-- header: "Песочница"
-- options:
-  - "Готово" — placeholder; the recruiter confirms in "Type something else"
+Note: Notion access uses the built-in Claude Desktop MCP connector (OAuth). No personal token needed — the connector handles auth.
 
 ### Step 4: Ask name
 
-Use AskUserQuestion:
-- question: «Как тебя зовут? Напиши имя и фамилию в поле "Type something else".»
-- header: "Имя"
-- options:
-  - "Напишу имя" — placeholder; the recruiter will type their actual name in "Type something else"
+Output as plain text, then STOP and wait:
 
-Save the name for later. Do NOT search Notion yet — we need the Notion token first.
+«Как тебя зовут? Напиши имя и фамилию (как в Notion).»
 
-### Step 5: Notion token
+Wait for the user to type their name in the chat. Do NOT use AskUserQuestion. Save the name for the next step.
 
-Use AskUserQuestion:
-- question: «Найди в 1Password запись "Notion Token" (или "Luna — [Твоё Имя]"), скопируй токен (начинается с ntn_) и вставь его в поле "Type something else".»
-- header: "Notion"
-- options:
-  - "Вставлю токен" — placeholder; the recruiter will paste the token in "Type something else"
+### Step 5: Identify recruiter in Team database
 
-Validate: token should start with `ntn_` or `secret_`. If not, explain:
-«Токен должен начинаться с ntn_ или secret_. Проверь, что скопировал правильное значение из 1Password.»
+Search the Team database using Notion MCP tools:
 
-### Step 6: Save initial config
-
-Create the config directory and write the config file with what we have so far:
-
-```bash
-mkdir -p ~/.luna-stack
-```
-
-```bash
-tee ~/.luna-stack/config.yaml <<'EOF'
-name: "<name from Step 4>"
-role: ""
-specialization: []
-notion_token: "<notion token from Step 5>"
-huntflow_access_token: ""
-huntflow_refresh_token: ""
-auto_upgrade: false
-EOF
-```
-
-This uses `tee` which is allowed by the permissions config. Do NOT use the Write tool or `cat >` redirection — they are not in the allow list.
-
-### Step 7: Identify recruiter in Team database
-
-Now that we have the Notion token saved, search the Team database.
-
-**Important**: Use the recruiter's personal Notion token from config, NOT the built-in Claude Desktop Notion integration.
-
-Try searching with the name from Step 4:
 ```
 mcp__claude_ai_Notion__notion-search
   query: "<recruiter name>"
@@ -116,98 +78,81 @@ mcp__claude_ai_Notion__notion-search
 - «Анастасия» → try "Anastasia"
 Tolerate 1-2 character differences (e.g., "Shestakov" vs "Shestacov").
 
-**If found** — fetch the full record, confirm with the recruiter:
-- Show: name, role, specialization, email
-- Use AskUserQuestion:
-  - question: «Нашла тебя в базе: [Name], [Role], [Specialization]. Это ты?»
-  - header: "Подтверждение"
-  - options:
-    - "Да, это я"
-    - "Нет, это не я"
+**If found** — fetch the full record, confirm with the recruiter. Use AskUserQuestion HERE (predefined options):
+- question: «Нашла тебя в базе: [Name], [Role], [Specialization]. Это ты?»
+- header: "Подтверждение"
+- options:
+  - "Да, это я"
+  - "Нет, это не я"
 
-Note: do NOT add "(Рекомендуется)" — this is a factual confirmation, not a recommendation.
+Note: do NOT add «(Рекомендуется)» — this is a factual confirmation.
 
-**If NOT found after transliteration** — fetch ALL active team members from the Team database and show as options:
-```
-mcp__claude_ai_Notion__notion-search
-  query: "Active"
-  data_source_url: "collection://32ef9167-2e00-8158-ba59-000b70b0a852"
-```
-
-Use AskUserQuestion:
+**If NOT found after transliteration** — fetch ALL active team members and show as options. Use AskUserQuestion HERE (predefined list):
 - question: «Не нашла тебя по имени. Выбери себя из списка:»
-- options: list each active team member as an option (up to 4) — the recruiter picks themselves from the list
+- options: list each active team member as an option (up to 4)
 
 Do NOT search outside the Team database. Do NOT fall back to workspace-wide search.
 
-### Step 8: Huntflow tokens
+### Step 6: Huntflow tokens
 
-Ask for **access token**:
+Output as plain text, then STOP and wait for each token:
 
-Use AskUserQuestion:
-- question: «Найди в 1Password запись "Huntflow Access Token", скопируй токен и вставь в поле "Type something else".»
-- header: "Huntflow"
-- options:
-  - "Вставлю токен" — placeholder; the recruiter will paste the token in "Type something else"
+«Теперь подключим Хантфлоу. Найди в 1Password запись "Huntflow Access Token", скопируй токен и вставь его сюда.»
 
-Then ask for **refresh token**:
+Wait for the user to paste the access token in the chat. Do NOT use AskUserQuestion.
 
-Use AskUserQuestion:
-- question: «Теперь найди в 1Password запись "Huntflow Refresh Token", скопируй и вставь в поле "Type something else".»
-- header: "Refresh"
-- options:
-  - "Вставлю токен" — placeholder; the recruiter will paste the token in "Type something else"
+Then:
 
-### Step 9: Detect Huntflow user ID
+«Теперь найди в 1Password запись "Huntflow Refresh Token", скопируй и вставь сюда.»
 
-Automatically detect the recruiter's Huntflow user ID using the tokens just collected.
+Wait for the user to paste the refresh token. Do NOT use AskUserQuestion.
 
-First, save a temporary config so huntflow.sh can authenticate:
+### Step 7: Detect Huntflow user ID
+
+Save a temporary config so huntflow.sh can authenticate:
+
+```bash
+mkdir -p ~/.luna-stack
+```
+
 ```bash
 tee ~/.luna-stack/config.yaml <<'EOF'
 name: "<confirmed name from Team DB>"
 role: "<role from Team DB>"
 specialization: [<list from Team DB>]
-notion_token: "<notion token>"
-huntflow_access_token: "<access token from Step 8>"
-huntflow_refresh_token: "<refresh token from Step 8>"
+huntflow_access_token: "<access token from Step 6>"
+huntflow_refresh_token: "<refresh token from Step 6>"
 huntflow_user_id: ""
 auto_upgrade: false
 EOF
 ```
 
-Then call:
+This uses `tee` which is allowed by the permissions config. Do NOT use the Write tool or `cat >` redirection.
+
+Then detect user ID:
 ```bash
 scripts/huntflow.sh me
 ```
 
-Extract the `id` field from the response — this is the recruiter's Huntflow user ID. Save it to config:
-```bash
-# Update huntflow_user_id in config with the detected value
-```
+Extract the `id` field from the response. If the call fails, output plain text asking the recruiter to provide their Huntflow user ID manually.
 
-If the call fails, ask the recruiter to provide their Huntflow user ID manually.
+### Step 8: Save final config
 
-### Step 10: Save final config
-
-Write the complete config file with all collected data including `huntflow_user_id`:
+Write the complete config file with all collected data:
 
 ```bash
 tee ~/.luna-stack/config.yaml <<'EOF'
 name: "<confirmed name from Team DB>"
 role: "<role from Team DB>"
 specialization: [<list from Team DB>]
-notion_token: "<notion token>"
-huntflow_access_token: "<access token from Step 8>"
-huntflow_refresh_token: "<refresh token from Step 8>"
-huntflow_user_id: "<user ID from Step 9>"
+huntflow_access_token: "<access token from Step 6>"
+huntflow_refresh_token: "<refresh token from Step 6>"
+huntflow_user_id: "<user ID from Step 7>"
 auto_upgrade: false
 EOF
 ```
 
-Note: `huntflow_account_id` is not stored in config — it is hardcoded in `scripts/huntflow.sh` and `CLAUDE.md`.
-
-### Step 11: Introduce commands
+### Step 9: Introduce commands
 
 Show available skills:
 
@@ -216,7 +161,7 @@ Show available skills:
 • `/vacancy` — начать работу с вакансией (главная команда)
 • `/briefing` — подготовка к брифингу с клиентом
 • `/vacancy-card` — оформить описание вакансии для кандидатов и внутренний профиль позиции
-• `/research` — глубокий ресёрч по компании, рынку, зарплатам
+• `/research` — глубокий ресерч по компании, рынку, зарплатам
 • `/outreach` — составить сообщение кандидату
 • `/screening` — оценить кандидата по критериям вакансии
 • `/summary` — оформить саммари кандидата после скрининга
@@ -227,6 +172,6 @@ Show available skills:
 
 **Главное правило:** одна сессия = одна вакансия. Для каждой вакансии создавай новую сессию (нажми + в левом верхнем углу).»
 
-### Step 12: Finish
+### Step 10: Finish
 
 «Настройка завершена! Для начала работы с первой вакансией нажми "New session" в верхнем левом углу и набери /vacancy.»

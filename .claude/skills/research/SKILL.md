@@ -4,7 +4,7 @@ description: |
   Deep research on a company, market, competitors, and salary benchmarks.
   Replaces the old ChatGPT-based research workflow. Produces a structured
   report and optionally saves it to the vacancy card in Notion.
-  Use when: "ресёрч", "research", "исследование", "узнай про компанию".
+  Use when: "ресерч", "research", "исследование", "узнай про компанию".
 ---
 
 Read the file `lib/preamble.md` and follow all rules defined there.
@@ -25,7 +25,7 @@ If there's a vacancy context, fetch the vacancy card for existing info.
 Use AskUserQuestion:
 - question: «Что исследуем? Могу сфокусироваться на конкретных аспектах.»
 - options:
-  - "Полный ресёрч (Рекомендуется)" — company + market + salaries + competitors
+  - "Полный ресерч (Рекомендуется)" — company + market + salaries + competitors
   - "Компания" — only company deep-dive
   - "Зарплаты и рынок" — salary benchmarks and market analysis
   - "Конкуренты" — competitor analysis for talent
@@ -79,7 +79,7 @@ Structure the report in Russian:
 Present the report to the recruiter.
 
 Use AskUserQuestion:
-- question: «Ресёрч готов. Сохранить в карточку вакансии?»
+- question: «Ресерч готов. Сохранить в карточку вакансии?»
 - options:
   - "Сохранить (Рекомендуется)"
   - "Не сохранять"

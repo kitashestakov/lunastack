@@ -4,7 +4,7 @@ description: |
   Generate a progress update message for the client. Pulls pipeline data
   from Huntflow, follows Luna's client communication guide from Notion,
   produces a compact message ready to copy into Telegram.
-  Use when: "апдейт клиенту", "client-update", "статус клиенту", "отчёт клиенту".
+  Use when: "апдейт клиенту", "client-update", "статус клиенту", "отчет клиенту".
 ---
 
 Read the file `lib/preamble.md` and follow all rules defined there.
@@ -76,7 +76,7 @@ Generate a client update message following the Notion guide format and ETHOS.md 
 
 **Rules:**
 - Concise: 5–10 sentences, no filler
-- Specific: numbers, names, dates — not "всё идёт хорошо"
+- Specific: numbers, names, dates — not "всё идет хорошо"
 - Honest: if pipeline is weak or response rate is low — say so with data
 - Actionable: always include next steps
 - Follow ETHOS.md: proactive, partner-like tone, not a status report from a vendor

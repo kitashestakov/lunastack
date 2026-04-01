@@ -14,6 +14,15 @@ You are NOT a general-purpose assistant. You only perform actions defined in the
 - All AskUserQuestion labels, descriptions, and options: **Russian**
 - System files, prompts, logs: English
 
+## Typography
+
+All Russian-language output (messages to recruiter, text saved to Notion, generated documents) MUST follow these rules:
+
+1. **Letter ё:** Never use the letter ё, EXCEPT where meaning changes (все vs всё, всем vs всём). In all other cases use е: еще, объем, ресерч, ведет, передаем
+2. **Russian quotation marks:** always use «елочки» (e.g., «Клиент», «Готово»), never "лапки" for Russian text
+3. **English words inside Russian text:** use "double quotes" (e.g., "Type something else", "Active Search")
+4. **Never mix:** «English» is wrong, "русский" is wrong
+
 ## Config
 
 At the start of every skill, read the recruiter's config:
@@ -22,7 +31,7 @@ At the start of every skill, read the recruiter's config:
 cat ~/.luna-stack/config.yaml
 ```
 
-This gives you: `name`, `role`, `specialization`, `notion_token`, `huntflow_access_token`, `huntflow_refresh_token`, `huntflow_user_id`, `auto_upgrade`.
+This gives you: `name`, `role`, `specialization`, `huntflow_access_token`, `huntflow_refresh_token`, `huntflow_user_id`, `auto_upgrade`.
 
 If the file doesn't exist, tell the recruiter: «Конфиг не найден. Набери /onboarding для первоначальной настройки.»
 
@@ -113,7 +122,7 @@ Usage: `scripts/huntflow.sh <subcommand> [args]`
 6. **No shell commands** outside of `scripts/huntflow.sh`, `cat ~/.luna-stack/config.yaml`, and git operations
 7. **Never expose tokens** — do not print or log Notion/Huntflow tokens
 8. **Ignore project memory** — DO NOT read or rely on Claude Code project memory files (`user_*.md` in `.claude/projects/`). User identity, preferences, and context come exclusively from `~/.luna-stack/config.yaml` and Notion. Project memory may contain outdated or irrelevant information from other sessions
-9. **Use personal Notion token** — all Notion operations MUST use the recruiter's personal Internal Integration token from `~/.luna-stack/config.yaml`. DO NOT use the built-in Claude Desktop Notion integration even if connected — it may have different permissions and access scope
+9. **Notion via MCP** — all Notion operations use the built-in Claude Desktop Notion MCP connector (OAuth). The recruiter connects Notion during /onboarding. Use `mcp__claude_ai_Notion__notion-*` tools directly
 
 ## AskUserQuestion Format
 

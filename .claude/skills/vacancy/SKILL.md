@@ -130,8 +130,8 @@ Map status to stage and offer contextual options:
 ### If vacancy NOT FOUND:
 
 1. Confirm with the recruiter:
-   «Вакансия [Client] — [Position] не найдена. Создаём новую?»
-   Options: "Создать (Рекомендуется)" / "Поискать ещё раз" / "Отмена"
+   «Вакансия [Client] — [Position] не найдена. Создаем новую?»
+   Options: "Создать (Рекомендуется)" / "Поискать еще раз" / "Отмена"
 
 2. **Find or create Client in Notion** using fuzzy strategy:
 

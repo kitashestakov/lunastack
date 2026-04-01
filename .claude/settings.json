@@ -17,6 +17,10 @@
       "Bash(git log *)",
       "Bash(git status)",
       "Bash(git diff *)",
+      "Bash(git push --dry-run *)",
+      "Bash(git push origin main)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
       "Bash(mkdir -p ~/.luna-stack)",
       "Bash(tee ~/.luna-stack/config.yaml *)"
     ],
@@ -28,7 +32,9 @@
       "mcp__claude_ai_Notion__notion-duplicate-page",
       "mcp__claude_ai_Notion__notion-move-pages",
       "Bash(rm *)",
-      "Bash(git push *)",
+      "Bash(git push -f *)",
+      "Bash(git push --force *)",
+      "Bash(git push --force-with-lease *)",
       "Bash(git reset *)",
       "Bash(git checkout *)",
       "Bash(curl *)",
@@ -40,6 +46,7 @@
     "autoAllowBashIfSandboxed": true,
     "filesystem": {
       "allowRead": ["~/.luna-stack"],
+      "allowWrite": ["~/.luna-stack"],
       "denyRead": ["~/.ssh", "~/.aws", "~/.gnupg", "~/.config/gcloud", "~/Documents", "~/Desktop", "~/Downloads", "~/.env", "~/.zshrc", "~/.bashrc", "~/.bash_profile", "~/.netrc", "~/.npmrc"]
     },
     "network": {

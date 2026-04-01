@@ -61,7 +61,7 @@ Example:
 • Исправлена ошибка в /vacancy при создании новой карточки»
 
 If nothing changed:
-«Luna Stack уже обновлён до последней версии.»
+«Luna Stack уже обновлен до последней версии.»
 
 ## Auto-upgrade at Session Start
 

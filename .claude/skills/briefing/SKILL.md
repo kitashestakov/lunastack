@@ -26,12 +26,18 @@ cat ~/.luna-stack/config.yaml
 
 2. Fetch the vacancy card from Notion to get company name, position, current status, any existing notes.
 
-3. Fetch the briefing preparation guide from Notion:
+3. Fetch the briefing guide from Notion — this defines the structure for all question preparation:
 ```
 mcp__claude_ai_Notion__notion-fetch
-  id: "2e2f91672e0080dab243e176cbe88eb7"
+  id: "2f7f91672e0080caa7f2c0fbc6afe0dd"
 ```
-Navigate to Stage 1 (Подготовка к брифингу) content. Read the specific guidelines for what to prepare.
+Read the full guide. Use its 8-block structure to organize questions and preparation materials. This ensures future guide updates auto-propagate.
+
+Also fetch the stage guide for additional context:
+```
+mcp__claude_ai_Notion__notion-fetch
+  id: "2e2f91672e0080318d36c9c1d39680b4"
+```
 
 ## Step 2: Research
 
@@ -45,9 +51,9 @@ Use WebSearch for each query. Compile findings.
 
 ## Step 3: Generate Briefing Prep
 
-Create a structured document with these sections:
+Create a structured document. Use the 8 blocks from the Notion briefing guide as the organizing framework:
 
-### О компании
+### О компании (Блок 2 из гайда: Компания и контекст)
 - Краткое описание, размер, индустрия
 - Последние новости и события
 - Культура и ценности (если нашлось)
@@ -58,21 +64,33 @@ Create a structured document with these sections:
 - Конкуренция за кандидатов (высокая/средняя/низкая)
 
 ### Вопросы для клиента
-Generate 10-15 targeted questions based on:
-- The Notion briefing guide structure
-- Gaps in the vacancy card (missing info)
-- Industry-specific considerations
-- Red/green flags to clarify
+Generate 10-15 targeted questions based on the Notion briefing guide structure, gaps in the vacancy card, industry context, and red/green flags.
 
-Group questions by category:
-- О позиции (must-have, nice-to-have, задачи, команда)
-- О процессе (этапы, сроки, принятие решений)
-- О кандидате (профиль, soft skills, red flags)
-- О компенсации (вилка, бонусы, условия)
+**Group questions by the 8 blocks from the Notion guide:**
+1. Открытие — формат, участники, кто принимает решение
+2. Компания и контекст — продукт, стадия, цели, почему нанимают сейчас
+3. Роль и функционал — задачи на 90 дней, зоны ответственности, подчинение
+4. Компетенции и скоринг — must-have навыки, уровни, минимальные пороги
+5. Портрет и антипортрет — компании-доноры, red flags, предыдущий опыт найма
+6. Финансы и KPI — вилка, бонусы, KPI с порогами, критерии ИС
+7. Процесс и сроки — этапы интервью, тестовое, SLA по фидбеку, дедлайн
+8. Продажа ценности — USP компании для кандидатов, перспективы роста
+
+### Шаблон скоринг-таблицы компетенций
+Based on Block 4 of the Notion briefing guide, prepare a blank scoring table template for the recruiter to fill during the briefing:
+
+```
+| Компетенция | Категория | Ожидаемый уровень (1-10) | Минимум | Комментарий |
+|-------------|-----------|-------------------------|---------|-------------|
+| [из ресерча] | Ключевая / Основная / Дополнительная | — | — | — |
+```
+
+Pre-fill competency names based on the research findings and vacancy card, but leave levels blank — the recruiter fills them during the briefing with the client. Include 5-8 suggested competencies.
 
 ### Рекомендации
 - Key points to emphasize during the briefing
 - Potential concerns or risks to address
+- Suggested pристрелочный кандидат strategy (from Notion guide)
 
 ## Step 4: Review and Save
 

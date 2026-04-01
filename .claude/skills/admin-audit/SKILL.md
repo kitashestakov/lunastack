@@ -108,6 +108,59 @@ For skills that reference specific Notion stage guides (briefing, screening, out
 - Completion criteria
 - Any hardcoded text that mirrors Notion content
 
+## Step 3b: Content-Logic Comparison
+
+For each skill that references a Notion guide page AND has its own hardcoded workflow steps (not just "read page X and follow it"), compare the structural elements.
+
+**Skip** skills that purely delegate to Notion at runtime (e.g., "fetch page X and follow all steps there"). Only check skills where the SKILL.md contains its OWN step sequence that was DERIVED from a Notion page.
+
+### Skills to check:
+
+**1. /briefing SKILL.md ↔ Notion "Подготовка к брифингу" + "Брифинг"**
+- Fetch: `2e2f91672e0080318d36c9c1d39680b4` (Подготовка к брифингу)
+- Fetch: `2f7f91672e0080caa7f2c0fbc6afe0dd` (Брифинг guide)
+- Compare: does the skill's step sequence match the Notion guide? Are key sections (research, questions, save to card) still aligned?
+
+**2. /screening SKILL.md ↔ Notion "Методика оценки"**
+- Fetch: `2eaf91672e0080beb984cabb8a2655c9` (Методика оценки)
+- Compare: does the skill's evaluation structure (must-have/nice-to-have/red flags/green flags/recommendation) match the Notion methodology? Are the criteria categories the same?
+
+**3. /outreach SKILL.md ↔ Notion "Нормы outreach" + "Стратегии поиска"**
+- Fetch: `2eaf91672e0080199eb5d4f974cc6f5a` (Нормы outreach)
+- Fetch: `2eaf91672e0080d7aae8fd8403d8c672` (Стратегии поиска)
+- Compare: does the skill's message structure (channels, length limits, anti-patterns) match the Notion norms? Are CDI-based personalization levels still aligned?
+
+**4. /vacancy-card SKILL.md ↔ Notion "Оформление вакансий"**
+- Fetch: `2eaf91672e008025a2fbf9cb878d5d8e` (Оформление вакансий)
+- Compare: if the Notion page has content, does the skill's default structure match? If the page is blank, note it as a warning.
+
+**5. /summary SKILL.md ↔ Notion "Методика оценки"**
+- Fetch: `2eaf91672e0080beb984cabb8a2655c9` (Методика оценки)
+- Compare: does the skill's summary format (strengths, risks, must-have checklist, recommendation) align with the Notion methodology format (must-have, nice-to-have, motivation, red flags, recommendation)?
+
+### How to compare:
+
+For each pair:
+1. Read the Notion page content
+2. Read the skill's SKILL.md
+3. Compare KEY STRUCTURAL ELEMENTS:
+   - Number of steps/sections in Notion guide vs skill
+   - Section names/titles — do they still match?
+   - Key terms, criteria, thresholds, or categories mentioned in both places
+   - Any new sections in Notion that the skill doesn't cover
+   - Any sections in the skill that no longer exist in Notion
+
+### Report format for this section:
+
+Add to the Step 4 report under a new sub-heading "Логика skills":
+
+```
+**Логика skills ↔ Notion:**
+- ✅ /briefing ↔ Подготовка к брифингу: логика совпадает
+- ⚠️ /outreach ↔ Нормы outreach: Notion добавил секцию X, skill не покрывает
+- ✅ /screening ↔ Методика оценки: структура оценки совпадает
+```
+
 ## Step 4: Report
 
 Output a structured report in Russian:

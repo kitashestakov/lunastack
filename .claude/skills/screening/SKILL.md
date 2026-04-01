@@ -27,12 +27,12 @@ If not: «Сначала набери /vacancy, чтобы выбрать вак
    - Compensation range
    - Any specific notes
 
-2. Fetch the screening/assessment methodology from Notion:
+2. Fetch the assessment methodology directly from Notion:
 ```
 mcp__claude_ai_Notion__notion-fetch
-  id: "2eaf91672e0080d2a7eafc2819c79f7b"
+  id: "2eaf91672e0080beb984cabb8a2655c9"
 ```
-Navigate to the assessment methodology section (методика оценки).
+Read the evaluation framework: criteria categories, scoring format, and recommendation structure.
 
 ## Step 2: Get Candidate Info
 

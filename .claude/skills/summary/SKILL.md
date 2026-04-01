@@ -120,6 +120,6 @@ mcp__claude_ai_Notion__notion-create-comment
 Use AskUserQuestion:
 - question: «Что дальше?»
 - options:
-  - "Оформить ещё одного кандидата" — loop back to Step 2
+  - "Оформить еще одного кандидата" — loop back to Step 2
   - "Подготовить кандидата к интервью" — suggest reading the prep guide
   - "Отправить апдейт клиенту" — suggest /client-update
