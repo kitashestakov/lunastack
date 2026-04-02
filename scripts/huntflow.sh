@@ -202,7 +202,7 @@ cmd_vacancy_update() {
 
 cmd_applicants_list() {
   local vacancy_id="$1"
-  hf_request GET "/vacancies/${vacancy_id}/applicants"
+  hf_request GET "/applicants?vacancy=${vacancy_id}"
 }
 
 cmd_applicant_add() {

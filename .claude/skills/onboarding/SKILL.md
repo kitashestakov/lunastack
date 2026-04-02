@@ -120,12 +120,15 @@ tee ~/.luna-stack/config.yaml <<'EOF'
 name: "<confirmed name from Team DB>"
 role: "<role from Team DB>"
 specialization: [<list from Team DB>]
+notion_page_url: "<recruiter's Team DB page URL, e.g. https://www.notion.so/32ef91672e0080339149caaf8c965932>"
 huntflow_access_token: "<access token from Step 6>"
 huntflow_refresh_token: "<refresh token from Step 6>"
 huntflow_user_id: ""
 auto_upgrade: false
 EOF
 ```
+
+The `notion_page_url` is the recruiter's page URL from the Team database — used by /vacancy to filter vacancies by recruiter.
 
 This uses `tee` which is allowed by the permissions config. Do NOT use the Write tool or `cat >` redirection.
 
@@ -149,6 +152,7 @@ tee ~/.luna-stack/config.yaml <<'EOF'
 name: "<confirmed name from Team DB>"
 role: "<role from Team DB>"
 specialization: [<list from Team DB>]
+notion_page_url: "<recruiter's Team DB page URL>"
 huntflow_access_token: "<access token from Step 6>"
 huntflow_refresh_token: "<refresh token from Step 6>"
 huntflow_user_id: "<user ID from Step 7>"

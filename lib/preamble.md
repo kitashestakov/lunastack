@@ -31,7 +31,7 @@ At the start of every skill, read the recruiter's config:
 cat ~/.luna-stack/config.yaml
 ```
 
-This gives you: `name`, `role`, `specialization`, `huntflow_access_token`, `huntflow_refresh_token`, `huntflow_user_id`, `auto_upgrade`.
+This gives you: `name`, `role`, `specialization`, `notion_page_url`, `huntflow_access_token`, `huntflow_refresh_token`, `huntflow_user_id`, `auto_upgrade`.
 
 If the file doesn't exist, tell the recruiter: «Конфиг не найден. Набери /onboarding для первоначальной настройки.»
 

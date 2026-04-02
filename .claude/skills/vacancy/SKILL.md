@@ -22,7 +22,7 @@ If YES and the recruiter is trying to work with a DIFFERENT vacancy:
 - DO NOT proceed
 - Explain: «Эта сессия уже привязана к вакансии [Client] — [Position]. Чтобы начать работу с другой вакансией, создай новую сессию (нажми +) и набери /vacancy.»
 
-If YES and it's the SAME vacancy, show the current status (skip to Step 3).
+If YES and it's the SAME vacancy, show the current status (skip to "If vacancy FOUND").
 
 ## Step 1: Load Config
 
@@ -30,68 +30,52 @@ If YES and it's the SAME vacancy, show the current status (skip to Step 3).
 cat ~/.luna-stack/config.yaml
 ```
 
-Extract recruiter name, specialization, huntflow_user_id.
+Extract: `name`, `specialization`, `huntflow_user_id`, `notion_page_url` (recruiter's Team DB page URL).
 
-## Step 2: Identify the Vacancy
+If `notion_page_url` is missing, look up the recruiter in the Team database using `mcp__claude_ai_Notion__notion-fetch` on the Team data source, then search the results by name. Save the found page URL for use in Step 3.
+
+## Step 2: Choose action
 
 Use AskUserQuestion:
-- question: «С какой вакансией работаем? Напиши название клиента и позицию.»
+- question: «Что делаем?»
 - header: "Вакансия"
-- Let the recruiter type freely (use 2 placeholder options, but the recruiter will type their answer in "Type something else")
+- options:
+  - "Продолжить работу по вакансии" — find an existing vacancy
+  - "Создать новую вакансию" — create from scratch
 
-Parse the response to extract: client name, position title.
+If «Продолжить» → go to Step 3.
+If «Создать» → go to "If vacancy NOT FOUND".
 
-## Step 3: Find vacancy
+## Step 3: Find existing vacancy
 
-### Step 3a: Fetch recruiter's active vacancies
-
-First, get ALL active vacancies for this recruiter in one query. The recruiter's Team DB page URL is needed — look it up from config name if not already known:
-
-```
-mcp__claude_ai_Notion__notion-search
-  query: "<recruiter name from config>"
-  data_source_url: "collection://32ef9167-2e00-8158-ba59-000b70b0a852"
-```
-
-Then fetch the Vacancies data source to get the recruiter's vacancies:
+Query ALL vacancies from the Notion database in ONE call using `mcp__claude_ai_Notion__notion-query-database-view`:
 
 ```
-mcp__claude_ai_Notion__notion-fetch
-  id: "collection://32ef9167-2e00-8102-ba94-000b387a05bb"
+mcp__claude_ai_Notion__notion-query-database-view
+  view_url: "https://www.notion.so/32ef91672e0081af9a31dec4b6a3542f?v=32ef91672e008142b159000c00bbb0df"
 ```
 
-This returns the database schema. Use the recruiter's Team DB page URL to query vacancies where «Рекрутер» matches and «Статус» is active.
+This returns all rows from the Vacancies database default view with their properties.
 
-The recruiter typically has 3-10 active vacancies. This one query replaces all the old multi-pass search + per-result verification logic.
+**Filter the results client-side:**
+1. Check each row's «Рекрутер» field — it contains a JSON array of page URLs like `["https://www.notion.so/32ef91672e0080339149caaf8c965932"]`. Match against the recruiter's `notion_page_url` from config.
+2. Check «Статус» — keep only "Active Search" and "Test period" (the two active statuses).
 
-### Step 3b: Match user's input
+**Do NOT use `notion-search` for finding vacancies.** The query-database-view returns structured data with all properties, no need to fetch individual pages.
 
-Take the client name + position from Step 2 and fuzzy-match against the results from Step 3a:
+Show the filtered list via AskUserQuestion:
+- question: «Вот твои активные вакансии. Выбери нужную:»
+- options: list each active vacancy (up to 4, format: "[Вакансия title] — [Статус]") + «Нет в списке»
 
-- Match against «Вакансия» title (contains position name)
-- Match against «Клиент» relation (contains client name)
-- Try both exact match and transliteration (кириллица ↔ латиница):
-  - «Бринго» → "Bringo"
-  - «ТехКорп» → "TechCorp"
-  - "Finbase" → «Финбейс»
-
-**If one match found** — proceed to "If vacancy FOUND" below.
-
-**If multiple matches found** — show them via AskUserQuestion and ask the recruiter to pick.
-
-**If no match found** — show ALL active vacancies from Step 3a via AskUserQuestion:
-- question: «Не нашла вакансию по запросу «[original query]». Вот твои активные вакансии — есть ли нужная среди них?»
-- options: list each vacancy as an option (up to 4) + «Создать новую вакансию»
-
-If the recruiter picks an existing vacancy, proceed to "If vacancy FOUND" below.
-If «Создать новую» — proceed to "If vacancy NOT FOUND" below.
+If the recruiter picks a vacancy → proceed to "If vacancy FOUND".
+If «Нет в списке» → ask for client name and position (plain text, wait for input), then fuzzy-match against ALL results from the query (including closed ones, using transliteration кириллица ↔ латиница). If still not found → proceed to "If vacancy NOT FOUND".
 
 ### If vacancy FOUND:
 
 1. Fetch the full vacancy card:
 ```
 mcp__claude_ai_Notion__notion-fetch
-  id: "<vacancy page URL or ID from search results>"
+  id: "<vacancy page URL or ID>"
 ```
 
 2. Extract from Notion card:
@@ -102,14 +86,26 @@ mcp__claude_ai_Notion__notion-fetch
    - Huntflow ID
    - Comments, conditions
 
-3. If Huntflow ID exists, get pipeline data:
+3. **Check content sub-pages.** The fetched vacancy page may contain child pages in its content section. Look for:
+   - A child page with title containing «Описание вакансии» — fetch it to check if it has content
+   - A child page with title containing «Профиль кандидата» — fetch it to check if it has content
+
+   Record the status of each:
+   - exists + has content → «заполнено ✅»
+   - exists + blank → «не заполнено ⚠️»
+   - does not exist → «отсутствует ⚠️»
+
+4. **Get Huntflow funnel data.** If Huntflow ID exists in the vacancy card:
 ```bash
 scripts/huntflow.sh vacancy-get <huntflow_id>
 scripts/huntflow.sh applicants-list <huntflow_id>
 ```
-   From vacancy-get response, read client name from custom field `N6zxOoJFHT4o9du_TFbCk` (dictionary object with `id` and `name`).
+   From vacancy-get response, read client name from custom field `N6zxOoJFHT4o9du_TFbCk`.
+   From applicants-list response, count candidates by stage. **Only say «воронка пустая» if the response truly contains 0 candidates.** If there are candidates — show counts per stage.
 
-4. Show combined summary to the recruiter:
+   If Huntflow ID is missing from the Notion card → note «Huntflow ID не указан ⚠️» and skip funnel data.
+
+5. **Show combined summary** to the recruiter:
 
 «**[Client] — [Position]**
 
@@ -119,6 +115,10 @@ scripts/huntflow.sh applicants-list <huntflow_id>
 • Рекрутер: [name]
 • Дата начала ИС: [date]
 
+📄 **Документы:**
+• Описание вакансии: [заполнено ✅ / не заполнено ⚠️]
+• Профиль кандидата: [заполнен ✅ / не заполнен ⚠️]
+
 📊 **Хантфлоу (воронка):**
 • Новые: [N]
 • Скрининг: [N]
@@ -126,39 +126,39 @@ scripts/huntflow.sh applicants-list <huntflow_id>
 • Оффер: [N]
 • Всего кандидатов: [N]»
 
-5. Determine the current stage and suggest relevant next actions using AskUserQuestion:
+6. **Suggest next actions** using AskUserQuestion.
 
-Map status to stage and offer contextual options:
-- **Active Search**: suggest `/vacancy-card`, `/outreach`, `/research`, `/screening`, `/briefing`
-- **Test period**: suggest `/client-update`, `/handoff`
-- **On Hold**: suggest resuming search, `/client-update`
-- **Vacancy closed / Failed / Test period failed**: inform that vacancy is closed, suggest `/handoff` if needed
+Build the options list based on what's actually needed:
+- If «Описание вакансии» is not filled → suggest `/vacancy-card`
+- If «Описание вакансии» is already filled → do NOT suggest `/vacancy-card`
+- If funnel is empty and status is "Active Search" → suggest `/outreach` as primary
+- If funnel has candidates on screening → suggest `/screening` or `/summary`
+
+Map status to contextual options:
+- **Active Search**: `/outreach`, `/research`, `/screening`, `/briefing` (+ `/vacancy-card` only if descriptions missing)
+- **Test period**: `/client-update`, `/handoff`
+- **On Hold**: resuming search, `/client-update`
+- **Vacancy closed / Failed / Test period failed**: inform closed, suggest `/handoff` if needed
 - **Any active stage**: always offer «Обновить данные» and «Посмотреть гайд по этапу»
 
 ### If vacancy NOT FOUND:
 
-1. Confirm with the recruiter:
-   «Вакансия [Client] — [Position] не найдена. Создаем новую?»
-   Options: "Создать (Рекомендуется)" / "Поискать еще раз" / "Отмена"
+1. Ask for client name and position (plain text, wait for input):
 
-2. **Find or create Client in Notion** using fuzzy strategy:
+«Напиши название клиента и позицию для новой вакансии.»
 
-**Pass 1 — exact query:**
+2. **Find or create Client in Notion:**
+
+Search the Clients database by name:
 ```
 mcp__claude_ai_Notion__notion-search
   query: "<client name>"
   data_source_url: "collection://32ef9167-2e00-81fe-8524-000b62b3305f"
 ```
 
-**Pass 2 — transliteration (if Pass 1 returned no results):**
-Try Latin/Cyrillic transliteration of the client name and search again.
+If not found — try transliteration (кириллица ↔ латиница) and search again. If still not found — show existing clients and ask the recruiter to pick or create new.
 
-**Pass 3 — show existing clients (if Pass 2 returned no results):**
-Search with a broader query (first word of the client name, or partial match) and show results to the recruiter:
-- question: «Клиент "[client name]" не найден. Возможно, он записан иначе. Вот похожие — есть ли нужный?»
-- options: up to 4 matching clients + "Создать нового клиента"
-
-If client not found and recruiter confirms — create it in Notion.
+Note: `notion-search` is appropriate here — this is a one-off text search for a specific client name, not the vacancy listing flow.
 
 3. **Find or create Client in Huntflow dictionary:**
 ```bash
@@ -184,22 +184,21 @@ mcp__claude_ai_Notion__notion-create-pages
       "Вакансия": "<Position> — <Client>",
       "Статус": "Active Search",
       "Тип": "External",
-      "Рекрутер": "<recruiter relation ID>"
+      "Рекрутер": "<recruiter Team DB page URL>"
     }
   }]
 ```
-Note: do NOT pass `content` — the template «Шаблон вакансии» provides the standard page structure. Template application is asynchronous — the page is created immediately but template content appears shortly after.
+Note: do NOT pass `content` — the template «Шаблон вакансии» provides the standard page structure.
 
 5. **Create vacancy in Huntflow** with client dictionary field and fill quotas:
 
-Determine vacancy type from the Notion "Тип" field:
+Determine vacancy type from the Notion «Тип» field:
 - If "External" (or not set) → pass `external` (default, uses Внешняя вакансия division)
 - If "Internal" → pass `internal` (uses Внутренняя вакансия division)
 
 ```bash
 scripts/huntflow.sh vacancy-create '{"position": "<Position>", "fill_quotas": [{"applicants_to_hire": 1}], "N6zxOoJFHT4o9du_TFbCk": <dict_client_id>}' external
 ```
-Note: `N6zxOoJFHT4o9du_TFbCk` is the custom field key for "Клиент" (dictionary type). The value is the dictionary entry `id` (integer). The second argument (`external`/`internal`) sets the division automatically.
 
 6. **Assign recruiter to vacancy in Huntflow** (using `huntflow_user_id` from config):
 ```bash
@@ -213,15 +212,6 @@ mcp__claude_ai_Notion__notion-update-page
   command: "update_properties"
   properties: { "Huntflow ID": <huntflow_vacancy_id> }
 ```
-
-8. **Look up recruiter in Team database** to set the relation:
-```
-mcp__claude_ai_Notion__notion-search
-  query: "<recruiter name from config>"
-  data_source_url: "collection://32ef9167-2e00-8158-ba59-000b70b0a852"
-```
-   Check if recruiter's specialization matches the vacancy domain. If mismatch, warn:
-   «Твоя специализация — [spec], а эта вакансия выглядит как [domain]. Всё верно?»
 
 ## Step 4: Session Naming
 

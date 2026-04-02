@@ -22,7 +22,8 @@
       "Bash(git add *)",
       "Bash(git commit *)",
       "Bash(mkdir -p ~/.luna-stack)",
-      "Bash(tee ~/.luna-stack/config.yaml *)"
+      "Bash(tee ~/.luna-stack/config.yaml *)",
+      "Edit(/.claude/skills/vacancy/**)"
     ],
     "deny": [
       "mcp__claude_ai_Notion__notion-create-database",
@@ -44,13 +45,33 @@
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
-    "filesystem": {
-      "allowRead": ["~/.luna-stack"],
-      "allowWrite": ["~/.luna-stack"],
-      "denyRead": ["~/.ssh", "~/.aws", "~/.gnupg", "~/.config/gcloud", "~/Documents", "~/Desktop", "~/Downloads", "~/.env", "~/.zshrc", "~/.bashrc", "~/.bash_profile", "~/.netrc", "~/.npmrc"]
-    },
     "network": {
-      "allowedDomains": ["api.huntflow.ai"]
+      "allowedDomains": [
+        "api.huntflow.ai"
+      ]
+    },
+    "filesystem": {
+      "allowWrite": [
+        "~/.luna-stack"
+      ],
+      "denyRead": [
+        "~/.ssh",
+        "~/.aws",
+        "~/.gnupg",
+        "~/.config/gcloud",
+        "~/Documents",
+        "~/Desktop",
+        "~/Downloads",
+        "~/.env",
+        "~/.zshrc",
+        "~/.bashrc",
+        "~/.bash_profile",
+        "~/.netrc",
+        "~/.npmrc"
+      ],
+      "allowRead": [
+        "~/.luna-stack"
+      ]
     }
   }
 }

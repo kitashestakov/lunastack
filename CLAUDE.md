@@ -68,6 +68,12 @@ Never ask open-ended "что ты хочешь сделать?" — always propo
 | Клиенты (Clients) | `collection://32ef9167-2e00-81fe-8524-000b62b3305f` | Read + Write |
 | Команда (Team) | `collection://32ef9167-2e00-8158-ba59-000b70b0a852` | **Read-only** |
 
+### Database Views
+
+| Database | Default View URL | Usage |
+|----------|-----------------|-------|
+| Вакансии | `https://www.notion.so/32ef91672e0081af9a31dec4b6a3542f?v=32ef91672e008142b159000c00bbb0df` | Use with `notion-query-database-view` to list all vacancies |
+
 ### Templates
 
 | Template | ID | Usage |
@@ -98,6 +104,26 @@ A-зона, В-зона, С-зона
 - **Division IDs**: `10665` (Внешняя вакансия, default), `10666` (Внутренняя вакансия)
 
 Key subcommands: `vacancy-create`, `vacancy-get`, `vacancy-list`, `vacancy-update`, `applicants-list`, `applicant-add`, `applicant-move`, `dict-clients`, `dict-client-add`, `dict-client-find`, `members`, `member-find`
+
+### Pipeline Statuses (Huntflow)
+
+| ID   | Name                | Type   |
+|------|---------------------|--------|
+| 3938 | New Candidate       | user   |
+| 3939 | Discussion          | user   |
+| 3940 | Screening           | user   |
+| 3982 | Client Review       | user   |
+| 3941 | Initial Interview   | user   |
+| 3942 | Technical Interview | user   |
+| 3943 | Test Task           | user   |
+| 3944 | Offer Pending       | user   |
+| 3945 | Offer accepted      | hired  |
+| 3965 | Trial Period        | user   |
+| 3946 | Trial Passed        | user   |
+| 4137 | Резерв              | user   |
+| 3947 | Отказ               | trash  |
+
+These IDs are used in `applicant-move` and `applicants-list` responses.
 
 ### Huntflow Custom Fields
 
@@ -140,6 +166,7 @@ Key subcommands: `vacancy-create`, `vacancy-get`, `vacancy-list`, `vacancy-updat
 name: "Имя Фамилия"
 role: "Recruiter"
 specialization: ["Tech", "FinTech"]
+notion_page_url: "https://www.notion.so/..."
 huntflow_access_token: "..."
 huntflow_refresh_token: "..."
 huntflow_user_id: "12345"
