@@ -47,53 +47,26 @@ mcp__claude_ai_Notion__notion-fetch
 ```
 
 If the page has content — follow its structure, rules, and format strictly.
-If the page is blank — use the default structure defined in Steps 3 and 4 below.
+If the page is blank — use the default structure defined in Steps 3-6 below.
 
 <!-- TODO: fill Notion page 2eaf91672e008025a2fbf9cb878d5d8e with formatting guidelines -->
 
-## Step 3: Generate External Description
-
-Compose the external vacancy description — a text ready to send to candidates via Telegram or LinkedIn.
-
-**Structure:**
-1. **Компания** — 2-3 предложения: чем занимается, масштаб, что интересного (use research data if available)
-2. **Позиция** — название, уровень, команда
-3. **Задачи** — 4-6 ключевых задач, конкретно и без воды
-4. **Требования** — must-have навыки и опыт (from vacancy card requirements + CDI)
-5. **Условия** — формат работы, зарплатная вилка (если раскрывается), бонусы, benefits
-
-**Tone of voice rules (from ETHOS.md):**
-- Вежливо, конструктивно, уверенно — без корпоративного шаблонного языка
-- Конкретика вместо абстракций: «стек: Python, FastAPI, PostgreSQL» вместо «современные технологии»
-- Не продавать — информировать. Кандидат должен понять, подходит ли ему позиция
-- 80-150 слов — коротко и по делу
-- Эмодзи допустимы точечно для структурирования (🔹, 📍), не для украшения
-
-**Anti-patterns to avoid:**
-- «Уникальная возможность», «динамично развивающаяся компания», «молодой дружный коллектив»
-- Размытые требования: «опыт работы с базами данных» без указания конкретных технологий
-- Перечисление 15+ требований — кандидат не дочитает
-
-Present the external description to the recruiter.
-
-## Step 4: Review External Description
+## Step 3: Choose Language for Public Vacancy
 
 Use AskUserQuestion:
-- question: «Внешнее описание готово. Проверь — оно пойдет кандидатам в Telegram/LinkedIn. Что-то поправить?»
-- header: "Внешнее описание"
+- question: «Публичная вакансия для кандидатов — на каком языке?»
+- header: "Язык публичной вакансии"
 - options:
-  - label: "Всё отлично (Рекомендуется)"
-    description: "Переходим к внутреннему описанию"
-  - label: "Поправить тон"
-    description: "Скажи, что изменить — сделаю формальнее/неформальнее"
-  - label: "Другой акцент"
-    description: "Скажи, на чем сфокусироваться — задачи, стек, условия"
-  - label: "Переписать"
-    description: "Сгенерирую новый вариант с нуля"
+  - label: "Русский и английский (Рекомендуется)"
+    description: "Сгенерирую обе версии"
+  - label: "Только русский"
+    description: "Одна версия на русском"
+  - label: "Только английский"
+    description: "Одна версия на английском"
 
-Iterate until the recruiter is satisfied.
+Save the choice for Step 7.
 
-## Step 5: Generate Internal Description
+## Step 4: Generate Internal Description (Описание вакансии и профиля)
 
 Compose the internal position profile — a detailed document for the recruiting team.
 
@@ -136,14 +109,14 @@ Compose the internal position profile — a detailed document for the recruiting
 - Green/red flags должны быть конкретными и проверяемыми на скрининге, а не абстрактными («мотивирован» — плохо, «ушел с прошлого места из-за потолка роста и ищет лидерскую роль» — хорошо)
 - Must-have vs nice-to-have: если сомневаешься — спроси рекрутера
 
-## Step 6: Review Internal Description
+## Step 5: Review Internal Description
 
 Use AskUserQuestion:
 - question: «Внутреннее описание готово. Проверь — это рабочий документ для скрининга и оценки кандидатов. Что-то поправить?»
-- header: "Внутреннее описание"
+- header: "Описание вакансии и профиля"
 - options:
   - label: "Всё отлично (Рекомендуется)"
-    description: "Оба документа готовы — переходим к сохранению"
+    description: "Переходим к публичной вакансии"
   - label: "Поправить требования"
     description: "Скажи, что перенести из must в nice-to-have или наоборот"
   - label: "Дополнить flags/bottlenecks"
@@ -153,24 +126,89 @@ Use AskUserQuestion:
 
 Iterate until the recruiter is satisfied.
 
-## Step 7: Save to Notion
+## Step 6: Generate Public Vacancy (Публичная вакансия)
+
+Compose the external vacancy description — a text ready to send to candidates via Telegram or LinkedIn.
+
+Generate for each language selected in Step 3.
+
+**Structure:**
+1. **Компания** — 2-3 предложения: чем занимается, масштаб, что интересного (use research data if available)
+2. **Позиция** — название, уровень, команда
+3. **Задачи** — 4-6 ключевых задач, конкретно и без воды
+4. **Требования** — must-have навыки и опыт (from vacancy card requirements + CDI)
+5. **Условия** — формат работы, зарплатная вилка (если раскрывается), бонусы, benefits
+
+**Tone of voice rules (from ETHOS.md):**
+- Вежливо, конструктивно, уверенно — без корпоративного шаблонного языка
+- Конкретика вместо абстракций: «стек: Python, FastAPI, PostgreSQL» вместо «современные технологии»
+- Не продавать — информировать. Кандидат должен понять, подходит ли ему позиция
+- 80-150 слов — коротко и по делу
+- Эмодзи допустимы точечно для структурирования (🔹, 📍), не для украшения
+
+**Anti-patterns to avoid:**
+- «Уникальная возможность», «динамично развивающаяся компания», «молодой дружный коллектив»
+- Размытые требования: «опыт работы с базами данных» без указания конкретных технологий
+- Перечисление 15+ требований — кандидат не дочитает
+
+**For English version:** adapt tone and structure for international candidates, keep the same factual content.
+
+Present the public vacancy to the recruiter. If both languages — show both versions.
+
+## Step 7: Review Public Vacancy
 
 Use AskUserQuestion:
-- question: «Оба документа согласованы. Сохранить в карточку вакансии в Notion?»
+- question: «Публичная вакансия готова. Проверь — она пойдет кандидатам в Telegram/LinkedIn. Что-то поправить?»
+- header: "Публичная вакансия"
+- options:
+  - label: "Всё отлично (Рекомендуется)"
+    description: "Все документы готовы — переходим к сохранению"
+  - label: "Поправить тон"
+    description: "Скажи, что изменить — сделаю формальнее/неформальнее"
+  - label: "Другой акцент"
+    description: "Скажи, на чем сфокусироваться — задачи, стек, условия"
+  - label: "Переписать"
+    description: "Сгенерирую новый вариант с нуля"
+
+Iterate until the recruiter is satisfied.
+
+## Step 8: Save to Notion
+
+Use AskUserQuestion:
+- question: «Все документы согласованы. Сохранить в карточку вакансии в Notion?»
 - header: "Сохранение"
 - options:
   - label: "Сохранить (Рекомендуется)"
-    description: "Добавлю оба описания в карточку вакансии"
+    description: "Сохраню описания в соответствующие страницы карточки вакансии"
   - label: "Не сохранять"
     description: "Документы останутся только в этом чате"
 
-If saving:
-1. Update the vacancy page content in Notion — append both descriptions as separate sections:
-   - Section «Внешнее описание (для кандидатов)»
-   - Section «Внутреннее описание (профиль позиции)»
+### Finding sub-pages
 
-2. Confirm: «Описания сохранены в карточку вакансии ✓»
+The vacancy template contains dedicated sub-pages for vacancy-card output. **Do NOT use hardcoded page IDs** — each vacancy has its own instances with different IDs.
 
-## Step 8: Next Steps
+1. Fetch the vacancy page content:
+```
+mcp__claude_ai_Notion__notion-fetch
+  id: "<vacancy page URL or ID>"
+```
+2. Look for child pages by title in the content section:
+   - «Описание вакансии и профиля» — for the internal description + profile
+   - Inside a «Публичная вакансия» callout block, look for two child pages:
+     - A page with title containing «русском» — for the Russian public vacancy
+     - A page with title containing «английском» — for the English public vacancy
+3. Get the URL/ID of each found sub-page.
 
-«Следующий шаг: согласуй внешнее описание с клиентом — отправь ему в чат. После апрува запусти /outreach, чтобы составить первое касание для кандидатов.»
+### Saving content
+
+- **Описание вакансии и профиля**: save the internal description (Step 4 output) using `notion-update-page` with `command: "replace_content"`.
+- **Russian public vacancy page**: save the Russian version (Step 6 output) using `notion-update-page` with `command: "replace_content"`. Only if Russian was selected in Step 3.
+- **English public vacancy page**: save the English version (Step 6 output) using `notion-update-page` with `command: "replace_content"`. Only if English was selected in Step 3.
+
+If a sub-page is not found by title, warn the recruiter: «Не нашла страницу «[name]» в карточке вакансии. Возможно, шаблон был изменен.»
+
+Confirm: «Описания сохранены в карточку вакансии ✓»
+
+## Step 9: Next Steps
+
+«Следующий шаг: согласуй публичную вакансию с клиентом — отправь ему в чат. После апрува запусти /outreach, чтобы составить первое касание для кандидатов.»

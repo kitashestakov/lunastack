@@ -23,7 +23,9 @@
       "Bash(git commit *)",
       "Bash(mkdir -p ~/.luna-stack)",
       "Bash(tee ~/.luna-stack/config.yaml *)",
-      "Edit(/.claude/skills/vacancy/**)"
+      "Edit(/.claude/skills/vacancy/**)",
+      "Edit(/.claude/skills/screening/**)",
+      "Edit(/.claude/skills/briefing/**)"
     ],
     "deny": [
       "mcp__claude_ai_Notion__notion-create-database",

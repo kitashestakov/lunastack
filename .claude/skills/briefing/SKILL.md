@@ -99,13 +99,34 @@ Show the full briefing prep to the recruiter.
 Use AskUserQuestion:
 - question: «Подготовка к брифингу готова. Сохранить в карточку вакансии в Notion?»
 - options:
-  - "Сохранить (Рекомендуется)" — save to vacancy card comments/content
+  - "Сохранить (Рекомендуется)" — save to vacancy sub-pages
   - "Отредактировать" — ask what to change
   - "Не сохранять" — keep in chat only
 
-If saving, use `mcp__claude_ai_Notion__notion-update-page` to add the briefing prep to the vacancy card content.
+### Saving to Notion sub-pages
+
+The vacancy template contains dedicated sub-pages for briefing output. **Do NOT use hardcoded page IDs** — each vacancy has its own instances with different IDs.
+
+**Finding sub-pages:**
+1. Fetch the vacancy page content:
+```
+mcp__claude_ai_Notion__notion-fetch
+  id: "<vacancy page URL or ID>"
+```
+2. Look for child pages by title in the content section:
+   - «Чеклист брифинга» — for the briefing checklist (questions + preparation)
+   - «Скоринг-таблица» — for the competency scoring table
+   - «Транскрибт брифинга» — for the briefing transcript (filled after the meeting)
+3. Get the URL/ID of each found sub-page.
+
+**Saving content:**
+- **Чеклист брифинга**: save the questions for the client (Step 3 output: all 8 blocks of questions + recommendations) using `notion-update-page` with `command: "replace_content"`.
+- **Скоринг-таблица**: save the blank scoring table template (Step 3 output: competency table with pre-filled names, empty levels) using `notion-update-page` with `command: "replace_content"`.
+- **Транскрибт брифинга**: leave empty — the recruiter fills it during/after the meeting.
+
+If a sub-page is not found by title, warn the recruiter: «Не нашла страницу «[name]» в карточке вакансии. Возможно, шаблон был изменен.»
 
 ## Step 5: Next Steps
 
 After saving, suggest:
-- «После брифинга вернись в эту сессию и обнови карточку вакансии с результатами встречи. Могу помочь с /research для углубленного анализа или /outreach для первых сообщений кандидатам.»
+- «После брифинга вернись в эту сессию — заполни транскрипт и скоринг-таблицу по результатам встречи. Могу помочь с /research для углубленного анализа или /outreach для первых сообщений кандидатам.»

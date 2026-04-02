@@ -102,6 +102,7 @@ API wrapper: `scripts/huntflow.sh`
 | `vacancy-list [--mine] [--opened]` | List vacancies |
 | `vacancy-update <vacancy_id> <json>` | Update vacancy |
 | `applicants-list <vacancy_id>` | List applicants for vacancy |
+| `applicant-get <applicant_id>` | Get full applicant profile |
 | `applicant-add <json>` | Add applicant |
 | `applicant-move <applicant_id> <vacancy_id> <status_id>` | Move applicant through pipeline |
 | `dict-clients` | List clients from dictionary (code: `klienty`) |

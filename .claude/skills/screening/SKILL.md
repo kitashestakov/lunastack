@@ -14,7 +14,7 @@ Read the file `ETHOS.md` for tone of voice guidance.
 
 ## Pre-check
 
-Verify session has an active vacancy context.
+Verify session has an active vacancy context (client + position + Notion page ID + Huntflow ID).
 If not: «Сначала набери /vacancy, чтобы выбрать вакансию.»
 
 ## Step 1: Load Criteria
@@ -34,14 +34,67 @@ mcp__claude_ai_Notion__notion-fetch
 ```
 Read the evaluation framework: criteria categories, scoring format, and recommendation structure.
 
-## Step 2: Get Candidate Info
+## Step 2: Choose Candidate Source
 
 Use AskUserQuestion:
-- question: «Расскажи о кандидате. Можешь вставить резюме, заметки после звонка, или описать своими словами.»
-- header: "Кандидат"
+- question: «Как получим данные о кандидате?»
+- header: "Скрининг"
 - options:
-  - "Вставлю текст" — recruiter will paste resume/notes in the next message
-  - "Опишу устно" — recruiter will describe the candidate
+  - label: "Выбрать из воронки в Хантфлоу (Рекомендуется)"
+    description: "Покажу список кандидатов по этой вакансии — выбери нужного"
+  - label: "Приложить резюме или описание"
+    description: "Вставь текст резюме, заметки или прикрепи файл"
+
+### Option A: Select from Huntflow funnel
+
+1. Fetch candidates for this vacancy:
+```bash
+scripts/huntflow.sh applicants-list <huntflow_id>
+```
+
+2. Parse the response — extract candidate list with: name, current stage, and applicant ID.
+
+3. Show candidates via AskUserQuestion:
+   - question: «Вот кандидаты по этой вакансии. Кого оцениваем?»
+   - options: list candidates (up to 6, format: "[Name] — [Stage]") + «Нет в списке»
+
+   If «Нет в списке» → fall through to Option B.
+
+4. After the recruiter picks a candidate, fetch full profile:
+```bash
+scripts/huntflow.sh applicant-get <applicant_id>
+```
+
+5. Display ALL available data from the profile:
+
+«**Данные кандидата из Хантфлоу:**
+
+👤 **[Name]**
+• Позиция: [position]
+• Компания: [company]
+• Телефон: [phone]
+• Email: [email]
+• Соцсети: [social links]
+
+📄 **Резюме:**
+[resume text if available]
+
+🏷 **Теги:** [tags if any]
+📝 **Комментарии:** [comments if any]»
+
+6. Ask for additional notes:
+
+Output as plain text, then wait:
+
+«Есть ли дополнительная информация по кандидату? Заметки после звонка, впечатления, детали, которых нет в Хантфлоу. Если нет — напиши «нет».»
+
+Wait for the recruiter to type their response.
+
+### Option B: Resume or description
+
+Output as plain text, then wait:
+
+«Вставь текст резюме, заметки после звонка, или опиши кандидата своими словами.»
 
 Wait for the recruiter to provide candidate information.
 
@@ -85,6 +138,6 @@ Always explain the reasoning.
 Use AskUserQuestion:
 - question: «Как поступим с этим кандидатом?»
 - options based on recommendation:
-  - If Продолжить: "Подготовить к интервью (Рекомендуется)" / "Оценить другого кандидата"
+  - If Продолжить: "Подготовить к интервью (Рекомендуется)" / "Оформить саммари (/summary)" / "Оценить другого кандидата"
   - If Обсудить: "Уточнить на скрининге (Рекомендуется)" / "Отклонить" / "Оценить другого"
   - If Отклонить: "Оценить другого кандидата (Рекомендуется)" / "Пересмотреть решение"

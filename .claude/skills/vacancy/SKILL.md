@@ -86,9 +86,11 @@ mcp__claude_ai_Notion__notion-fetch
    - Huntflow ID
    - Comments, conditions
 
-3. **Check content sub-pages.** The fetched vacancy page may contain child pages in its content section. Look for:
-   - A child page with title containing «Описание вакансии» — fetch it to check if it has content
-   - A child page with title containing «Профиль кандидата» — fetch it to check if it has content
+3. **Check content sub-pages.** The fetched vacancy page may contain child pages in its content section. Look for these sub-pages by title and fetch each to check if it has content:
+   - «Чеклист брифинга» — briefing checklist
+   - «Скоринг-таблица» — competency scoring table
+   - «Описание вакансии и профиля» — internal description + candidate profile
+   - Inside «Публичная вакансия» callout: page with «русском» in title (RU), page with «английском» in title (EN)
 
    Record the status of each:
    - exists + has content → «заполнено ✅»
@@ -115,9 +117,12 @@ scripts/huntflow.sh applicants-list <huntflow_id>
 • Рекрутер: [name]
 • Дата начала ИС: [date]
 
-📄 **Документы:**
-• Описание вакансии: [заполнено ✅ / не заполнено ⚠️]
-• Профиль кандидата: [заполнен ✅ / не заполнен ⚠️]
+📄 **Контент:**
+• Чеклист брифинга: [заполнен ✅ / не заполнен ⚠️]
+• Скоринг-таблица: [заполнена ✅ / не заполнена ⚠️]
+• Описание вакансии и профиля: [заполнено ✅ / не заполнено ⚠️]
+• Публичная вакансия (RU): [заполнена ✅ / не заполнена ⚠️]
+• Публичная вакансия (EN): [заполнена ✅ / не заполнена ⚠️]
 
 📊 **Хантфлоу (воронка):**
 • Новые: [N]
@@ -129,13 +134,14 @@ scripts/huntflow.sh applicants-list <huntflow_id>
 6. **Suggest next actions** using AskUserQuestion.
 
 Build the options list based on what's actually needed:
-- If «Описание вакансии» is not filled → suggest `/vacancy-card`
-- If «Описание вакансии» is already filled → do NOT suggest `/vacancy-card`
+- If «Чеклист брифинга» is not filled → suggest `/briefing`
+- If «Описание вакансии и профиля» is not filled → suggest `/vacancy-card`
+- If descriptions are already filled → do NOT suggest `/vacancy-card`
 - If funnel is empty and status is "Active Search" → suggest `/outreach` as primary
 - If funnel has candidates on screening → suggest `/screening` or `/summary`
 
 Map status to contextual options:
-- **Active Search**: `/outreach`, `/research`, `/screening`, `/briefing` (+ `/vacancy-card` only if descriptions missing)
+- **Active Search**: `/outreach`, `/research`, `/screening`, `/briefing` (+ `/vacancy-card` only if descriptions missing, + `/briefing` only if checklist missing)
 - **Test period**: `/client-update`, `/handoff`
 - **On Hold**: resuming search, `/client-update`
 - **Vacancy closed / Failed / Test period failed**: inform closed, suggest `/handoff` if needed
@@ -213,19 +219,7 @@ mcp__claude_ai_Notion__notion-update-page
   properties: { "Huntflow ID": <huntflow_vacancy_id> }
 ```
 
-## Step 4: Session Naming
-
-After the vacancy is identified/created, display as plain text (NOT via AskUserQuestion):
-
-«Переименуй эту сессию. Напиши в чат (не в "Type something else", а прямо в поле ввода сообщения):
-
-/rename [Client] — [Position] (месяц год)
-
-Например: /rename TechCorp — Frontend Dev (март 2026)»
-
-Wait for the recruiter to type the /rename command. Do not proceed until they confirm or skip.
-
-## Step 5: Next Actions
+## Step 4: Next Actions
 
 Use AskUserQuestion to offer the most relevant next step based on the vacancy stage. Always include the recommendation with reasoning.
 

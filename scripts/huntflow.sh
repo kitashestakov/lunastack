@@ -205,6 +205,11 @@ cmd_applicants_list() {
   hf_request GET "/applicants?vacancy=${vacancy_id}"
 }
 
+cmd_applicant_get() {
+  local applicant_id="$1"
+  hf_request GET "/applicants/${applicant_id}"
+}
+
 cmd_applicant_add() {
   local json="$1"
   hf_request POST "/applicants" "$json"
@@ -610,6 +615,7 @@ Luna Stack — Huntflow API wrapper
   vacancy-list [--mine] [--opened]         Список вакансий
   vacancy-update <vacancy_id> <json>       Обновить вакансию
   applicants-list <vacancy_id>             Список кандидатов по вакансии
+  applicant-get <applicant_id>             Полный профиль кандидата
   applicant-add <json>                     Добавить кандидата
   applicant-move <applicant_id> <vacancy_id> <status_id>  Переместить кандидата
   dict-clients                             Список клиентов из справочника
@@ -636,6 +642,7 @@ case "$SUBCOMMAND" in
   vacancy-list)     cmd_vacancy_list "$@" ;;
   vacancy-update)   cmd_vacancy_update "$@" ;;
   applicants-list)  cmd_applicants_list "$@" ;;
+  applicant-get)    cmd_applicant_get "$@" ;;
   applicant-add)    cmd_applicant_add "$@" ;;
   applicant-move)   cmd_applicant_move "$@" ;;
   dict-clients)     cmd_dict_clients ;;

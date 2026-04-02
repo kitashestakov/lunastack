@@ -35,7 +35,7 @@ Luna Stack is a set of Claude Code skills for the Luna Pastel recruiting agency.
 - Each vacancy is worked in a dedicated session
 - `/vacancy` binds the session to a specific vacancy; subsequent skills operate on that vacancy
 - If a recruiter tries to start a new vacancy in an existing session, block and explain: create a new session
-- Session naming convention: `[Client] — [Position] (month year)` (e.g., `TechCorp — Frontend Dev (март 2026)`)
+- Session naming: recruiter renames sessions manually if needed
 
 ### Skill Execution Pattern
 - Every skill reads `lib/preamble.md` first and follows all rules defined there
@@ -80,6 +80,25 @@ Never ask open-ended "что ты хочешь сделать?" — always propo
 |----------|-----|-------|
 | Шаблон вакансии | `330f9167-2e00-804a-a321-c08895fea043` | Always apply when creating new vacancy pages via notion-create-pages |
 
+### Vacancy Template Sub-pages
+
+Each vacancy created from the template contains these sub-pages. **IDs below are from the template — real vacancies have different IDs.** Always find sub-pages by title, not by hardcoded ID.
+
+```
+Брифинг
+  ├── Чеклист брифинга          (template: 336f91672e00808d9db2c3bd9730a211)
+  ├── Скоринг-таблица            (template: 336f91672e0080038735de0b7ac2d7d3)
+  └── Транскрибт брифинга        (template: 336f91672e0080a28f2ef3fb27455658)
+
+Вакансия
+  ├── Описание вакансии и профиля (template: 330f91672e0080c98ae4fce619673267)
+  └── Публичная вакансия (callout)
+        ├── [русском]             (template: 336f91672e0080e9bac5ef478e0f5790)
+        └── [английском]          (template: 336f91672e00806dadc6f7a108440506)
+```
+
+Skills that write to sub-pages: `/briefing` → checklist + scoring table, `/vacancy-card` → description + public vacancy (RU/EN).
+
 ### Knowledge Pages
 
 | Section | Page ID |
@@ -103,7 +122,7 @@ A-зона, В-зона, С-зона
 - **Account ID**: `18980` (hardcoded, same for all recruiters)
 - **Division IDs**: `10665` (Внешняя вакансия, default), `10666` (Внутренняя вакансия)
 
-Key subcommands: `vacancy-create`, `vacancy-get`, `vacancy-list`, `vacancy-update`, `applicants-list`, `applicant-add`, `applicant-move`, `dict-clients`, `dict-client-add`, `dict-client-find`, `members`, `member-find`
+Key subcommands: `vacancy-create`, `vacancy-get`, `vacancy-list`, `vacancy-update`, `applicants-list`, `applicant-get`, `applicant-add`, `applicant-move`, `dict-clients`, `dict-client-add`, `dict-client-find`, `members`, `member-find`
 
 ### Pipeline Statuses (Huntflow)
 
