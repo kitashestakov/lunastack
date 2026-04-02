@@ -218,8 +218,59 @@ cmd_applicant_move() {
   hf_request POST "/applicants/${applicant_id}/vacancy" "$json"
 }
 
-cmd_me() {
-  hf_request GET "/users/me"
+cmd_members() {
+  hf_request GET "/coworkers"
+}
+
+cmd_member_find() {
+  local search_name="$1"
+  local search_lower
+  search_lower=$(echo "$search_name" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+  local members_raw
+  members_raw=$(hf_request GET "/coworkers")
+
+  # Search by name substring (case-insensitive) directly in raw JSON
+  # Find entry containing the search name, extract its "member" field
+  local result
+  result=$(echo "$members_raw" | grep -oi "\"name\":\"[^\"]*${search_lower}[^\"]*\"" | head -1 || true)
+
+  if [ -z "$result" ]; then
+    # Try case-insensitive grep on the raw JSON
+    result=$(echo "$members_raw" | tr '[:upper:]' '[:lower:]' | grep -o "\"name\":\"[^\"]*${search_lower}[^\"]*\"" | head -1 || true)
+  fi
+
+  if [ -z "$result" ]; then
+    echo "Пользователь «${search_name}» не найден среди членов организации в Хантфлоу." >&2
+    return 1
+  fi
+
+  # Extract the actual name to find the corresponding member ID
+  local matched_name
+  matched_name=$(echo "$result" | sed 's/"name":"//;s/"//')
+
+  # Find the member ID for this name in the original (case-preserved) JSON
+  local member_id
+  member_id=$(echo "$members_raw" | grep -o "\"member\":[0-9]*,\"name\":\"${matched_name}\"" | head -1 | grep -o '"member":[0-9]*' | sed 's/"member"://' || true)
+
+  if [ -z "$member_id" ]; then
+    # Try different JSON key order
+    member_id=$(echo "$members_raw" | grep -o "\"name\":\"${matched_name}\"[^}]*\"member\":[0-9]*" | head -1 | grep -o '"member":[0-9]*' | sed 's/"member"://' || true)
+  fi
+
+  if [ -z "$member_id" ]; then
+    # Last resort: find the entry block containing this name and extract member
+    local block
+    block=$(echo "$members_raw" | grep -oE "\{[^}]*\"name\":\"${matched_name}\"[^}]*\}" | head -1 || true)
+    member_id=$(echo "$block" | grep -o '"member":[0-9]*' | head -1 | sed 's/"member"://' || true)
+  fi
+
+  if [ -n "$member_id" ]; then
+    echo "$member_id"
+  else
+    echo "Найден пользователь «${matched_name}», но не удалось определить ID." >&2
+    return 1
+  fi
 }
 
 # --- Dictionary (Клиенты) subcommands ---
@@ -455,6 +506,88 @@ cmd_migrate_clients() {
   fi
 }
 
+# --- State migration ---
+# Reads JSON from $TMPDIR/vacancy-states.json, sets HF vacancy states based on Notion status
+
+cmd_migrate_states() {
+  local mode="${1:---dry-run}"
+  local json_file="${TMPDIR:-/tmp/claude}/vacancy-states.json"
+
+  if [ ! -f "$json_file" ]; then
+    echo "Ошибка: файл $json_file не найден. Сначала создайте его через Claude Code." >&2
+    exit 1
+  fi
+
+  echo "=== Миграция состояний вакансий ==="
+  echo ""
+  echo "ID | Позиция | Notion статус | Текущее HF | Целевое HF | Статус"
+  echo "---|---------|--------------|------------|-----------|-------"
+
+  local updated=0
+  local skipped=0
+
+  set +e
+  # Parse JSON entries using python3 for reliability
+  python3 -c "
+import json, sys
+with open('$json_file') as f:
+    for v in json.load(f):
+        print(f\"{v['huntflow_id']}|{v['position']}|{v.get('notion_status','')}|{v['target_hf_state']}|{v['match_type']}\")
+" | while IFS='|' read -r hf_id position notion_status target_state match_type; do
+    [ -z "$hf_id" ] && continue
+
+    # Get current HF state
+    local current_state
+    current_state=$(hf_request GET "/vacancies/${hf_id}" 2>/dev/null | grep -o '"state":"[^"]*"' | sed 's/"state":"//;s/"//') || current_state="UNKNOWN"
+
+    # Skip no_match entries
+    if [ "$match_type" = "no_match" ]; then
+      echo "${hf_id} | ${position} | ${notion_status} | ${current_state} | — | пропущено (нет матча)"
+      continue
+    fi
+
+    # Skip if already in target state
+    if [ "$current_state" = "$target_state" ]; then
+      echo "${hf_id} | ${position} | ${notion_status} | ${current_state} | ${target_state} | уже верно"
+      skipped=$((skipped + 1))
+      continue
+    fi
+
+    if [ "$mode" = "--apply" ]; then
+      # Get current vacancy data for required fields
+      local vdata
+      vdata=$(hf_request GET "/vacancies/${hf_id}" 2>/dev/null) || { echo "${hf_id} | ${position} | ОШИБКА чтения"; continue; }
+      local safe_position
+      safe_position=$(echo "$vdata" | grep -o '"position":"[^"]*"' | sed 's/"position":"//;s/"//' | sed 's/"/\\"/g')
+      local division
+      division=$(echo "$vdata" | grep -o '"account_division":[0-9]*' | sed 's/"account_division"://')
+      local client_field
+      client_field=$(echo "$vdata" | grep -o '"N6zxOoJFHT4o9du_TFbCk":[^,}]*' | sed 's/"N6zxOoJFHT4o9du_TFbCk"://' || echo "null")
+      [ -z "$client_field" ] && client_field="null"
+
+      local result
+      result=$(hf_request PUT "/vacancies/${hf_id}" "{\"position\": \"${safe_position}\", \"account_division\": ${division}, \"N6zxOoJFHT4o9du_TFbCk\": ${client_field}, \"state\": \"${target_state}\"}" 2>/dev/null) || true
+      if [ -n "$result" ]; then
+        echo "${hf_id} | ${position} | ${notion_status} | ${current_state} | → ${target_state} | обновлено"
+        updated=$((updated + 1))
+      else
+        echo "${hf_id} | ${position} | ${notion_status} | ${current_state} | → ${target_state} | ОШИБКА"
+      fi
+    else
+      echo "${hf_id} | ${position} | ${notion_status} | ${current_state} | → ${target_state} | нужно обновить"
+    fi
+  done
+  set -e
+
+  echo ""
+  if [ "$mode" = "--dry-run" ]; then
+    echo "=== DRY RUN — изменения не внесены ==="
+    echo "Для применения: scripts/huntflow.sh migrate-states --apply"
+  else
+    echo "=== Миграция завершена ==="
+  fi
+}
+
 # Generic endpoint for discovery/debugging
 cmd_raw() {
   local method="$1"
@@ -483,7 +616,9 @@ Luna Stack — Huntflow API wrapper
   dict-client-add <name>                   Добавить клиента в справочник
   dict-client-find <name>                  Найти клиента в справочнике по имени
   migrate-clients [--dry-run|--apply]      Миграция клиентов в справочник
-  me                                       Текущий пользователь API
+  migrate-states [--dry-run|--apply]       Миграция состояний вакансий по данным из Notion
+  members                                  Список пользователей организации
+  member-find <name>                       Найти пользователя по имени → вернуть ID
 EOF
 }
 
@@ -507,7 +642,9 @@ case "$SUBCOMMAND" in
   dict-client-add)  cmd_dict_client_add "$@" ;;
   dict-client-find) cmd_dict_client_find "$@" ;;
   migrate-clients)  cmd_migrate_clients "$@" ;;
-  me)               cmd_me ;;
+  migrate-states)   cmd_migrate_states "$@" ;;
+  members)          cmd_members ;;
+  member-find)      cmd_member_find "$@" ;;
   raw)              cmd_raw "$@" ;;
   *)
     echo "Неизвестная команда: $SUBCOMMAND" >&2

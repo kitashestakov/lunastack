@@ -108,7 +108,8 @@ API wrapper: `scripts/huntflow.sh`
 | `dict-client-add <name>` | Add client to dictionary |
 | `dict-client-find <name>` | Find client in dictionary by name (case-insensitive) |
 | `migrate-clients [--dry-run\|--apply]` | One-time migration from divisions to dictionary |
-| `me` | Get current API user info (ID, name, email) |
+| `members` | List organization members (coworkers) |
+| `member-find <name>` | Find member by name → return user ID |
 
 Usage: `scripts/huntflow.sh <subcommand> [args]`
 

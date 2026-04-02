@@ -68,6 +68,12 @@ Never ask open-ended "что ты хочешь сделать?" — always propo
 | Клиенты (Clients) | `collection://32ef9167-2e00-81fe-8524-000b62b3305f` | Read + Write |
 | Команда (Team) | `collection://32ef9167-2e00-8158-ba59-000b70b0a852` | **Read-only** |
 
+### Templates
+
+| Template | ID | Usage |
+|----------|-----|-------|
+| Шаблон вакансии | `330f9167-2e00-804a-a321-c08895fea043` | Always apply when creating new vacancy pages via notion-create-pages |
+
 ### Knowledge Pages
 
 | Section | Page ID |
@@ -76,7 +82,7 @@ Never ask open-ended "что ты хочешь сделать?" — always propo
 | Гайды, шаблоны, регламенты | `2eaf91672e0080d2a7eafc2819c79f7b` |
 
 ### Vacancy Statuses
-Client Review, Active Search, Non-priority search, Medium Stages, Final Stages, Offer pending, Offer approved, Test period, Vacancy closed, On Hold, Test period failed, Failed
+Active Search, Test period, Vacancy closed, On Hold, Test period failed, Failed
 
 ### Vacancy SLA Zones
 A-зона, В-зона, С-зона
@@ -91,7 +97,7 @@ A-зона, В-зона, С-зона
 - **Account ID**: `18980` (hardcoded, same for all recruiters)
 - **Division IDs**: `10665` (Внешняя вакансия, default), `10666` (Внутренняя вакансия)
 
-Key subcommands: `vacancy-create`, `vacancy-get`, `vacancy-list`, `vacancy-update`, `applicants-list`, `applicant-add`, `applicant-move`, `dict-clients`, `dict-client-add`, `dict-client-find`, `me`
+Key subcommands: `vacancy-create`, `vacancy-get`, `vacancy-list`, `vacancy-update`, `applicants-list`, `applicant-add`, `applicant-move`, `dict-clients`, `dict-client-add`, `dict-client-find`, `members`, `member-find`
 
 ### Huntflow Custom Fields
 

@@ -26,7 +26,7 @@ Greet the recruiter in Russian. Briefly explain what Luna Stack is and note that
 
 Твоя рабочая среда уже настроена в безопасном режиме — я могу работать только с файлами проекта Luna Stack и не имею доступа к твоим личным файлам, паролям или документам.
 
-Давай настроим все за пару минут.»
+Давай настроим всё за пару минут.»
 
 ### Step 2: Switch to Opus
 
@@ -45,9 +45,9 @@ Output as plain text, then STOP and wait:
 
 «Подключи Notion к Claude Desktop:
 → Открой настройки Claude Desktop (⌘ + ,)
-→ Перейди в раздел "Connectors" (или "Integrations")
-→ Найди Notion → нажми "Connect"
-→ Выбери workspace Luna Pastel и дай доступ
+→ Перейди в раздел "Connectors"
+→ Найди Notion и нажми "Connect"
+→ Выбери workspace Luna Pastel и подтверди доступ
 
 Когда подключишь — напиши «Готово».»
 
@@ -59,7 +59,7 @@ Note: Notion access uses the built-in Claude Desktop MCP connector (OAuth). No p
 
 Output as plain text, then STOP and wait:
 
-«Как тебя зовут? Напиши имя и фамилию (как в Notion).»
+«Как тебя зовут? Напиши имя и фамилию.»
 
 Wait for the user to type their name in the chat. Do NOT use AskUserQuestion. Save the name for the next step.
 
@@ -129,12 +129,16 @@ EOF
 
 This uses `tee` which is allowed by the permissions config. Do NOT use the Write tool or `cat >` redirection.
 
-Then detect user ID:
+Then auto-detect the recruiter's Huntflow user ID using their English name from the Team DB:
+
 ```bash
-scripts/huntflow.sh me
+scripts/huntflow.sh member-find "<English name from Team DB>"
 ```
 
-Extract the `id` field from the response. If the call fails, output plain text asking the recruiter to provide their Huntflow user ID manually.
+This searches the Huntflow organization members by name and returns the user ID.
+
+If found — save to config silently (no questions to the recruiter).
+If not found — warn: «Не удалось найти тебя в списке пользователей Хантфлоу. Обратись к администратору Luna Stack.» Continue without huntflow_user_id — it can be added later.
 
 ### Step 8: Save final config
 
