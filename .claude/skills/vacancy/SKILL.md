@@ -219,7 +219,18 @@ mcp__claude_ai_Notion__notion-update-page
   properties: { "Huntflow ID": <huntflow_vacancy_id> }
 ```
 
-## Step 4: Next Actions
+## Step 4: Session Name Suggestion
+
+After the vacancy is identified or created, display as plain text (NOT via AskUserQuestion):
+
+«Переименуй сессию, чтобы потом легко к ней вернуться:
+→ Нажми на название сессии вверху окна
+→ Формат: [Клиент] — [Позиция]
+→ Например: Neginski — Head of Online Sales»
+
+Do not wait for confirmation — proceed immediately to next actions.
+
+## Step 5: Next Actions
 
 Use AskUserQuestion to offer the most relevant next step based on the vacancy stage. Always include the recommendation with reasoning.
 
