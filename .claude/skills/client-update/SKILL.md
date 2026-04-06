@@ -15,12 +15,12 @@ Read the file `ETHOS.md` for tone of voice guidance — especially client commun
 ## Pre-check
 
 Verify session has an active vacancy context.
-If not: ask the recruiter which vacancy this update is for and search the Vacancies database:
+If not: ask the recruiter which vacancy this update is for and query the Vacancies database:
 ```
-mcp__claude_ai_Notion__notion-search
-  query: "<vacancy name from recruiter>"
-  data_source_url: "collection://32ef9167-2e00-8102-ba94-000b387a05bb"
+mcp__claude_ai_Notion__notion-query-database-view
+  view_url: "https://www.notion.so/32ef91672e0081af9a31dec4b6a3542f?v=32ef91672e008142b159000c00bbb0df"
 ```
+Let the recruiter pick the vacancy from the list.
 
 ## Step 1: Load Context
 

@@ -86,6 +86,7 @@ Each vacancy created from the template contains these sub-pages. **IDs below are
 
 ```
 Брифинг
+  ├── Рисерч компании            (template: 336f91672e0080a68b93eca55156a63a)
   ├── Чеклист брифинга          (template: 336f91672e00808d9db2c3bd9730a211)
   ├── Скоринг-таблица            (template: 336f91672e0080038735de0b7ac2d7d3)
   └── Транскрибт брифинга        (template: 336f91672e0080a28f2ef3fb27455658)
@@ -107,7 +108,7 @@ Skills that write to sub-pages: `/briefing` → checklist + scoring table, `/vac
 | Гайды, шаблоны, регламенты | `2eaf91672e0080d2a7eafc2819c79f7b` |
 
 ### Vacancy Statuses
-Active Search, Test period, Vacancy closed, On Hold, Test period failed, Failed
+Research, Active, Test Period, On Hold, Vacancy Closed, Test Period Failed, Lost
 
 ### Vacancy SLA Zones
 A-зона, В-зона, С-зона

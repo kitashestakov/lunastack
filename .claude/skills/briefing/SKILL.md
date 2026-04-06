@@ -80,9 +80,9 @@ Generate 10-15 targeted questions based on the Notion briefing guide structure, 
 Based on Block 4 of the Notion briefing guide, prepare a blank scoring table template for the recruiter to fill during the briefing:
 
 ```
-| Компетенция | Категория | Ожидаемый уровень (1-10) | Минимум | Комментарий |
-|-------------|-----------|-------------------------|---------|-------------|
-| [из ресерча] | Ключевая / Основная / Дополнительная | — | — | — |
+| Компетенция | Категория | Ключ | Ожидаемый уровень (0-7) | Минимум | Комментарий |
+|-------------|-----------|------|-------------------------|---------|-------------|
+| [из ресерча] | Ключевая / Основная / Дополнительная | [суть в 1 предложении] | — | — | — |
 ```
 
 Pre-fill competency names based on the research findings and vacancy card, but leave levels blank — the recruiter fills them during the briefing with the client. Include 5-8 suggested competencies.

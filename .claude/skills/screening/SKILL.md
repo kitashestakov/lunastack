@@ -112,6 +112,19 @@ Assess the candidate against the vacancy criteria. For each criterion:
 |----------|--------|-------------|
 | [requirement] | ➕ / ➖ / ❓ | [brief note] |
 
+### Soft skills 🧠
+| Навык | Оценка | Комментарий |
+|-------|--------|-------------|
+| Коммуникация | ✅ / ⚠️ / ❓ | [brief note] |
+| Ownership | ✅ / ⚠️ / ❓ | [brief note] |
+| Структурность мышления | ✅ / ⚠️ / ❓ | [brief note] |
+
+### Мотивация 🎯
+- Причина смены работы: [reason]
+- Что ищет в следующей роли: [goals]
+- Таймлайн: [timeline]
+- Стоп-факторы: [stop factors if any]
+
 ### Red flags 🚩
 List any detected red flags from the methodology.
 

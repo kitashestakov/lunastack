@@ -59,7 +59,7 @@ This returns all rows from the Vacancies database default view with their proper
 
 **Filter the results client-side:**
 1. Check each row's «Рекрутер» field — it contains a JSON array of page URLs like `["https://www.notion.so/32ef91672e0080339149caaf8c965932"]`. Match against the recruiter's `notion_page_url` from config.
-2. Check «Статус» — keep only "Active Search" and "Test period" (the two active statuses).
+2. Check «Статус» — keep only "Research", "Active" and "Test Period" (the active statuses).
 
 **Do NOT use `notion-search` for finding vacancies.** The query-database-view returns structured data with all properties, no need to fetch individual pages.
 
@@ -137,14 +137,15 @@ Build the options list based on what's actually needed:
 - If «Чеклист брифинга» is not filled → suggest `/briefing`
 - If «Описание вакансии и профиля» is not filled → suggest `/vacancy-card`
 - If descriptions are already filled → do NOT suggest `/vacancy-card`
-- If funnel is empty and status is "Active Search" → suggest `/outreach` as primary
+- If funnel is empty and status is "Active" → suggest `/outreach` as primary
 - If funnel has candidates on screening → suggest `/screening` or `/summary`
 
 Map status to contextual options:
-- **Active Search**: `/outreach`, `/research`, `/screening`, `/briefing` (+ `/vacancy-card` only if descriptions missing, + `/briefing` only if checklist missing)
-- **Test period**: `/client-update`, `/handoff`
+- **Research**: `/research`, `/briefing`
+- **Active**: `/outreach`, `/research`, `/screening`, `/briefing` (+ `/vacancy-card` only if descriptions missing, + `/briefing` only if checklist missing)
+- **Test Period**: `/client-update`, `/handoff`
 - **On Hold**: resuming search, `/client-update`
-- **Vacancy closed / Failed / Test period failed**: inform closed, suggest `/handoff` if needed
+- **Vacancy Closed / Lost / Test Period Failed**: inform closed, suggest `/handoff` if needed
 - **Any active stage**: always offer «Обновить данные» and «Посмотреть гайд по этапу»
 
 ### If vacancy NOT FOUND:
@@ -188,7 +189,7 @@ mcp__claude_ai_Notion__notion-create-pages
     template_id: "330f9167-2e00-804a-a321-c08895fea043",
     properties: {
       "Вакансия": "<Position> — <Client>",
-      "Статус": "Active Search",
+      "Статус": "Active",
       "Тип": "External",
       "Рекрутер": "<recruiter Team DB page URL>"
     }
