@@ -104,7 +104,7 @@ Skills that write to sub-pages: `/briefing` → checklist + scoring table, `/vac
 
 | Section | Page ID |
 |---------|---------|
-| Процесс и знания (8 vacancy stages) | `2e2f91672e0080dab243e176cbe88eb7` |
+| Весь процесс вакансии (8 vacancy stages) | `2e2f91672e0080dab243e176cbe88eb7` |
 | Гайды, шаблоны, регламенты | `2eaf91672e0080d2a7eafc2819c79f7b` |
 
 ### Vacancy Statuses
