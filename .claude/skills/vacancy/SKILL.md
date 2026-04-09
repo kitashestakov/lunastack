@@ -97,15 +97,108 @@ mcp__claude_ai_Notion__notion-fetch
    - exists + blank → «не заполнено ⚠️»
    - does not exist → «отсутствует ⚠️»
 
-4. **Get Huntflow funnel data.** If Huntflow ID exists in the vacancy card:
-```bash
-scripts/huntflow.sh vacancy-get <huntflow_id>
-scripts/huntflow.sh applicants-list <huntflow_id>
-```
+4. **Check Huntflow ID and get funnel data.**
+
+   **If Huntflow ID exists and is non-empty:**
+
+   Fetch funnel data:
+   ```bash
+   scripts/huntflow.sh vacancy-get <huntflow_id>
+   scripts/huntflow.sh applicants-list <huntflow_id>
+   ```
    From vacancy-get response, read client name from custom field `N6zxOoJFHT4o9du_TFbCk`.
    From applicants-list response, count candidates by stage. **Only say «воронка пустая» if the response truly contains 0 candidates.** If there are candidates — show counts per stage.
 
-   If Huntflow ID is missing from the Notion card → note «Huntflow ID не указан ⚠️» and skip funnel data.
+   **If Huntflow ID is empty or missing:**
+
+   The vacancy exists in Notion but has no Huntflow ID. Before offering to create, check if it already exists in Huntflow.
+
+   a. Read vacancy position name and client name from the Notion page. For client name, fetch the «Клиент» relation page.
+
+   b. **Search Huntflow for a matching vacancy:**
+   ```bash
+   scripts/huntflow.sh vacancy-list --opened
+   ```
+   Search the response for a match by position name (fuzzy, case-insensitive substring match). For each candidate match, call `scripts/huntflow.sh vacancy-get <id>` and compare the client name from custom field `N6zxOoJFHT4o9du_TFbCk` (resolve via `dict-clients` if needed).
+
+   If no match among open vacancies, also check all vacancies (including closed/hold):
+   ```bash
+   scripts/huntflow.sh vacancy-list
+   ```
+   Paginate if needed. Search the same way.
+
+   c. **If a match is found in Huntflow:**
+
+   Use AskUserQuestion:
+   - question: «Нашла похожую вакансию в Хантфлоу: [position] (ID: [id], статус: [state]). Это она?»
+   - header: "Хантфлоу"
+   - options:
+     - label: "Да, привязать (Рекомендуется)"
+       description: "Запишу Huntflow ID в карточку вакансии в Notion"
+     - label: "Нет, это другая вакансия"
+       description: "Продолжу поиск или создам новую"
+
+   If «Да, привязать»:
+   - Update the Notion vacancy page with the found Huntflow ID:
+   ```
+   mcp__claude_ai_Notion__notion-update-page
+     page_id: "<vacancy page ID>"
+     command: "update_properties"
+     properties: { "Huntflow ID": <found_huntflow_id> }
+   ```
+   - Confirm: «Вакансия привязана к Хантфлоу (ID: [id]). Huntflow ID записан в Notion.»
+   - Proceed to fetch funnel data with the linked ID.
+
+   If «Нет» → proceed to step d.
+
+   d. **If no match found (or recruiter said «Нет»):**
+
+   Use AskUserQuestion:
+   - question: «Эта вакансия еще не создана в Хантфлоу. Создать?»
+   - header: "Хантфлоу"
+   - options:
+     - label: "Да, создать в Хантфлоу (Рекомендуется)"
+       description: "Создам вакансию в Хантфлоу и привяжу к карточке в Notion"
+     - label: "Нет, продолжить без Хантфлоу"
+       description: "Воронка и кандидаты будут недоступны"
+
+   **If «Да, создать»:**
+
+   i. Find or create client in Huntflow dictionary:
+   ```bash
+   scripts/huntflow.sh dict-client-find "<Client Name>"
+   ```
+   If not found:
+   ```bash
+   scripts/huntflow.sh dict-client-add "<Client Name>"
+   scripts/huntflow.sh dict-client-find "<Client Name>"
+   ```
+
+   ii. Determine vacancy type from «Тип» field:
+   - "External" (or not set) → `external` (division 10665)
+   - "Internal" → `internal` (division 10666)
+
+   iii. Create vacancy in Huntflow:
+   ```bash
+   scripts/huntflow.sh vacancy-create '{"position": "<Position>", "fill_quotas": [{"applicants_to_hire": 1}], "coworkers": [<huntflow_user_id from config>], "N6zxOoJFHT4o9du_TFbCk": <dict_client_id>}' external
+   ```
+   Capture the `"id"` from the response.
+
+   iv. Update the Notion vacancy page with the new Huntflow ID:
+   ```
+   mcp__claude_ai_Notion__notion-update-page
+     page_id: "<vacancy page ID>"
+     command: "update_properties"
+     properties: { "Huntflow ID": <huntflow_vacancy_id> }
+   ```
+
+   v. Confirm: «Вакансия создана в Хантфлоу (ID: [id]). Huntflow ID записан в Notion.»
+
+   vi. Proceed to fetch funnel data (will be empty since just created).
+
+   **If «Нет, продолжить без Хантфлоу»:**
+
+   Continue without Huntflow. In the summary, show: «⚠️ Вакансия не привязана к Хантфлоу — воронка недоступна» instead of the funnel section.
 
 5. **Show combined summary** to the recruiter:
 
@@ -181,7 +274,21 @@ Then find again to get the ID:
 scripts/huntflow.sh dict-client-find "<Client Name>"
 ```
 
-4. **Create vacancy in Notion** using the standard template:
+4. **Create vacancy in Huntflow FIRST.**
+
+Huntflow must be created first so we have the Huntflow vacancy ID to store in Notion.
+
+Determine vacancy type:
+- If "External" (or not set) → pass `external` (default, uses division 10665)
+- If "Internal" → pass `internal` (uses division 10666)
+
+```bash
+scripts/huntflow.sh vacancy-create '{"position": "<Position>", "fill_quotas": [{"applicants_to_hire": 1}], "coworkers": [<huntflow_user_id from config>], "N6zxOoJFHT4o9du_TFbCk": <dict_client_id>}' external
+```
+
+The response JSON contains an `"id"` field — this is the Huntflow vacancy ID. Save it.
+
+5. **Create vacancy in Notion** with the Huntflow ID from step 4:
 ```
 mcp__claude_ai_Notion__notion-create-pages
   parent: { type: "data_source_id", data_source_id: "32ef9167-2e00-8102-ba94-000b387a05bb" }
@@ -191,34 +298,12 @@ mcp__claude_ai_Notion__notion-create-pages
       "Вакансия": "<Position> — <Client>",
       "Статус": "Active",
       "Тип": "External",
-      "Рекрутер": "<recruiter Team DB page URL>"
+      "Рекрутер": "<recruiter Team DB page URL>",
+      "Huntflow ID": <huntflow_vacancy_id from step 4>
     }
   }]
 ```
-Note: do NOT pass `content` — the template «Шаблон вакансии» provides the standard page structure.
-
-5. **Create vacancy in Huntflow** with client dictionary field and fill quotas:
-
-Determine vacancy type from the Notion «Тип» field:
-- If "External" (or not set) → pass `external` (default, uses Внешняя вакансия division)
-- If "Internal" → pass `internal` (uses Внутренняя вакансия division)
-
-```bash
-scripts/huntflow.sh vacancy-create '{"position": "<Position>", "fill_quotas": [{"applicants_to_hire": 1}], "N6zxOoJFHT4o9du_TFbCk": <dict_client_id>}' external
-```
-
-6. **Assign recruiter to vacancy in Huntflow** (using `huntflow_user_id` from config):
-```bash
-scripts/huntflow.sh vacancy-update <new_vacancy_id> '{"coworkers": [<huntflow_user_id from config>]}'
-```
-
-7. **Write Huntflow ID back to Notion card:**
-```
-mcp__claude_ai_Notion__notion-update-page
-  page_id: "<new page ID>"
-  command: "update_properties"
-  properties: { "Huntflow ID": <huntflow_vacancy_id> }
-```
+Note: do NOT pass `content` — the template «Шаблон вакансии» provides the standard page structure. The Huntflow ID is set at creation time so there is no need for a separate update.
 
 ## Step 4: Session Name Suggestion
 
