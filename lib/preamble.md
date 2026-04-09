@@ -53,6 +53,7 @@ If the file doesn't exist, tell the recruiter: «Конфиг не найден.
 | Вакансии | `collection://32ef9167-2e00-8102-ba94-000b387a05bb` | Read + Write |
 | Клиенты | `collection://32ef9167-2e00-81fe-8524-000b62b3305f` | Read + Write |
 | Команда | `collection://32ef9167-2e00-8158-ba59-000b70b0a852` | **Read-only** |
+| Еженедельные синки | `collection://4c4aea05-80b3-45db-b977-91120cd30625` | Read + Write |
 
 ### Knowledge Pages
 

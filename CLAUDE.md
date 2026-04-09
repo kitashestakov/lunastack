@@ -28,6 +28,7 @@ Luna Stack is a set of Claude Code skills for the Luna Pastel recruiting agency.
 ## Admin Skills
 
 - `/admin-audit` — Audit synchronization between Notion content and Luna Stack files (requires push access)
+- `/weekly-sync` — Create weekly sync records for all active vacancies (deduplication built in)
 
 ## Architecture Rules
 
@@ -67,12 +68,14 @@ Never ask open-ended "что ты хочешь сделать?" — always propo
 | Вакансии (Vacancies) | `collection://32ef9167-2e00-8102-ba94-000b387a05bb` | Read + Write |
 | Клиенты (Clients) | `collection://32ef9167-2e00-81fe-8524-000b62b3305f` | Read + Write |
 | Команда (Team) | `collection://32ef9167-2e00-8158-ba59-000b70b0a852` | **Read-only** |
+| Еженедельные синки (Weekly Syncs) | `collection://4c4aea05-80b3-45db-b977-91120cd30625` | Read + Write |
 
 ### Database Views
 
 | Database | Default View URL | Usage |
 |----------|-----------------|-------|
 | Вакансии | `https://www.notion.so/32ef91672e0081af9a31dec4b6a3542f?v=32ef91672e008142b159000c00bbb0df` | Use with `notion-query-database-view` to list all vacancies |
+| Еженедельные синки | `https://www.notion.so/91fad0f8a69446bcac7ee526a5523095?v=33df91672e0081428910000cd35c7abd` | Use with `notion-query-database-view` to list sync records |
 
 ### Templates
 

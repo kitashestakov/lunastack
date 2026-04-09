@@ -161,26 +161,142 @@ Add to the Step 4 report under a new sub-heading "Логика skills":
 - ✅ /screening ↔ Методика оценки: структура оценки совпадает
 ```
 
-## Step 4: Report
+## Step 4: Infrastructure Health Check
 
-Output a structured report in Russian:
+After content checks, run infrastructure verification.
+
+### 4a: Huntflow API commands
+
+Parse each SKILL.md for references to `scripts/huntflow.sh` subcommands.
+
+**Read-only commands — execute a real test call:**
+- `scripts/huntflow.sh vacancy-list --opened` → verify JSON with "items" array, count items
+- `scripts/huntflow.sh dict-clients` → verify JSON with client list, count entries
+- `scripts/huntflow.sh members` → verify JSON with member list, count entries
+- Pick one vacancy ID from vacancy-list response, run `scripts/huntflow.sh applicants-list <id>` → verify JSON response
+- Pick one applicant ID from the applicants-list response (if any), run `scripts/huntflow.sh applicant-get <id>` → verify JSON response
+
+**Write commands — verify function exists in huntflow.sh via grep, do NOT execute:**
+- `vacancy-create`, `vacancy-update`, `applicant-add`, `applicant-move`, `dict-client-add`
+
+Report format per command:
+- ✅ работает (with brief result: e.g., "5 открытых вакансий")
+- ❌ ошибка (with actual error message from stderr)
+- ⚠️ существует, не тестируется (write operations)
+
+### 4b: Notion pages and databases
+
+Parse each SKILL.md for Notion references:
+- Page IDs (32-char hex strings or UUIDs in `id:` fields)
+- Data source URLs (`collection://...`)
+- View URLs (`https://www.notion.so/...?v=...`)
+
+For each unique reference:
+- Page IDs → call `notion-fetch`, verify page exists and is accessible
+- Data source URLs → call `notion-fetch`, verify schema is returned
+- View URLs → call `notion-query-database-view`, verify it returns results
+
+Report format:
+- ✅ доступна (with page title)
+- ❌ не найдена или ошибка (with error message)
+
+### 4c: Vacancy template
+
+Verify template exists and has correct structure:
+1. Call `notion-fetch` on template ID `330f9167-2e00-804a-a321-c08895fea043`
+2. Check for expected sub-pages in content:
+   - Рисерч компании
+   - Чеклист брифинга
+   - Скоринг-таблица
+   - Транскрибт брифинга
+   - Описание вакансии и профиля
+   - Публичная вакансия (callout with RU and EN sub-pages)
+
+Report:
+- ✅ шаблон корректен (N sub-страниц)
+- ⚠️ отсутствует sub-страница «[название]»
+
+### 4d: Config validation
+
+Read `~/.luna-stack/config.yaml` and verify:
+- All required fields exist and are non-empty: `name`, `role`, `specialization`, `huntflow_access_token`, `huntflow_refresh_token`, `huntflow_user_id`, `notion_page_url`
+- `huntflow_user_id` is a number
+- `notion_page_url` starts with `https://www.notion.so/`
+- Huntflow tokens work: the `vacancy-list --opened` call from step 4a already validates this (401 = tokens expired)
+
+Report:
+- ✅ конфиг корректен
+- ❌ поле «[name]» отсутствует или пусто
+- ⚠️ токены Хантфлоу истекли (if vacancy-list returned 401)
+
+### 4e: Sandbox and permissions
+
+Read `.claude/settings.json` and verify:
+- `sandbox.enabled` is `true`
+- `sandbox.autoAllowBashIfSandboxed` is `true`
+- `sandbox.network.allowedDomains` includes `"api.huntflow.ai"` and `"github.com"`
+- `sandbox.filesystem.allowWrite` includes `"~/.luna-stack"`
+- `sandbox.filesystem.denyRead` includes sensitive paths: `~/.ssh`, `~/.aws`, `~/.gnupg`
+
+Report:
+- ✅ sandbox настроен корректно
+- ⚠️ [конкретная проблема]
+
+## Step 5: Report
+
+Output a structured report in Russian combining content checks (Steps 1-3b) and infrastructure checks (Step 4):
 
 ```
 ## Результаты аудита
 
-**✅ Синхронизировано:**
-- [file] ↔ [Notion page/section] — совпадает
+**❌ Ошибки:**
+- [file]: ссылка на [page ID] — страница не найдена / недоступна
 
 **⚠️ Требует внимания:**
 - [file]: [what diverges] — [suggested action]
 
-**❌ Ошибки:**
-- [file]: ссылка на [page ID] — страница не найдена / недоступна
+**✅ Синхронизировано:**
+- [file] ↔ [Notion page/section] — совпадает
+
+**Логика skills ↔ Notion:**
+- ✅ /briefing ↔ Подготовка к брифингу: логика совпадает
+- ...
+
+🔧 **Инфраструктура:**
+
+**Huntflow API:**
+- vacancy-list: работает ✅ (N открытых вакансий)
+- dict-clients: работает ✅ (N клиентов)
+- members: работает ✅ (N пользователей)
+- applicants-list: работает ✅ (N кандидатов)
+- applicant-get: работает ✅
+- vacancy-create: существует ✅ (не тестируется)
+- ...
+
+**Notion:**
+- База «Вакансии» (collection://...): доступна ✅
+- База «Клиенты» (collection://...): доступна ✅
+- База «Команда» (collection://...): доступна ✅
+- View «Вакансии»: работает ✅ (N записей)
+- Шаблон вакансии: корректен ✅ (N sub-страниц)
+- Страница «Брифинг» (...): доступна ✅
+- ...
+
+**Конфиг** (~/.luna-stack/config.yaml):
+- Все поля заполнены ✅
+- Токены Хантфлоу: действительны ✅
+- huntflow_user_id: [value] ✅
+
+**Sandbox** (.claude/settings.json):
+- Sandbox включен ✅
+- Домены: api.huntflow.ai, github.com ✅
+- Запись: ~/.luna-stack разрешена ✅
+- Чтение: sensitive paths заблокированы ✅
 ```
 
 Group items by severity: errors first, then warnings, then OK items.
 
-## Step 5: Fix
+## Step 6: Fix
 
 For each item in the "Требует внимания" section, use AskUserQuestion:
 
@@ -194,9 +310,9 @@ For each item in the "Требует внимания" section, use AskUserQuest
 
 If the user approves — make the edit. Show the diff before applying.
 
-If all items are skipped or there are no warnings — skip to Step 6.
+If all items are skipped or there are no warnings — skip to Step 7.
 
-## Step 6: Commit
+## Step 7: Commit
 
 If any files were changed, use AskUserQuestion:
 
