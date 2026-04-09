@@ -59,7 +59,7 @@ If the file doesn't exist, tell the recruiter: «Конфиг не найден.
 
 | Section | Page ID |
 |---------|---------|
-| Процесс и знания | `2e2f91672e0080dab243e176cbe88eb7` |
+| Весь процесс вакансии | `2e2f91672e0080dab243e176cbe88eb7` |
 | Гайды, шаблоны, регламенты | `2eaf91672e0080d2a7eafc2819c79f7b` |
 
 ### MCP Tool Reference
