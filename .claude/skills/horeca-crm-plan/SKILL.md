@@ -2,7 +2,7 @@
 name: horeca-crm-plan
 description: |
   Plan next actions for all leads in the HoReCa CRM.
-  Fills empty or overdue Next Action Date / Next Action / Next Action Message.
+  Fills Next Action Date / Next Action / Next Action Message per lead.
   Generates ready-to-send messages in the client's language and Nastya's voice.
   Use when: "horeca crm plan", "запланируй crm", "что делать по лидам", "horeca-crm-plan".
 user-invocable: true
@@ -15,17 +15,39 @@ Read the file `ETHOS.md` for tone of voice guidance.
 
 ## Purpose
 
-CEO не должна думать, что писать и когда. Она открывает CRM и видит готовый план на сегодня с сообщениями. Этот скилл заполняет пустые и просроченные Next Action поля по всей CRM-таблице.
+CEO не должна думать, что писать и когда. Она открывает CRM и видит по каждому лиду готовое сообщение и дату следующего контакта. Скилл проходит по ВСЕЙ таблице и заполняет поля Next Action / Next Action Message для каждого лида, плюс ставит оптимальную Next Action Date там, где она не задана вручную или просрочена.
 
 ## Safety Rule (CRITICAL)
 
-**НИКОГДА не перезаписывай Next Action Date, если дата уже стоит и >= сегодня.**
+**Next Action Date можно ставить или менять ТОЛЬКО если:**
+- она пустая, ИЛИ
+- она строго в прошлом (просрочено)
 
-Скилл обновляет ТОЛЬКО лиды, где:
-- `Next Action Date` пустой, ИЛИ
-- `Next Action Date` строго в прошлом (просрочено)
+Если дата уже стоит и >= сегодня — это ручное решение CEO или менеджера, **не трогай ее**.
 
-Если у лида стоит дата сегодня или в будущем — НЕ ТРОГАЙ. CEO или менеджер поставили её вручную.
+**Next Action и Next Action Message обновляются ВСЕГДА,** если они пустые или явно устарели (не соответствуют текущему Stage / последним Notes). Это касается даже лидов с будущей датой: мы не трогаем дату, но помогаем с содержанием.
+
+## Processing Logic (per lead)
+
+Для каждого лида вычисляем три поля независимо:
+
+### Next Action Date
+
+- Пустая → рассчитай оптимальную дату
+- В прошлом → поставь на сегодня или ближайший разумный день
+- Сегодня или в будущем → **НЕ ТРОГАЙ**
+
+### Next Action
+
+- Пустое → заполни
+- Заполнено, но не соответствует текущему Stage (например, стадия Meeting held, а в Next Action «позвонить для первого контакта») → перепиши
+- Заполнено и соответствует Stage → не трогай
+
+### Next Action Message
+
+- Пустое → сгенерируй
+- Заполнено, но контекст изменился (новая Note, новый Stage) → перепиши
+- Заполнено и актуально → не трогай
 
 ## Step 1: Fetch CRM
 
@@ -35,17 +57,11 @@ Query the HoReCa CRM database view "Все лиды":
 notion-query-database-view: view://33bf9167-2e00-805d-ac05-000cb6fb546c
 ```
 
-## Step 2: Classify Each Lead
+## Step 2: Analyze Each Lead
 
 For each lead, determine:
 
-### 2a. Needs update?
-
-- `Next Action Date` is empty → YES
-- `Next Action Date` < today → YES (overdue)
-- `Next Action Date` >= today → SKIP (already planned)
-
-### 2b. Language
+### 2a. Language
 
 Determine communication language from Contact Name, Notes, Contact details:
 - Russian names (Юлианна, Кира, Евгения, Yana) or Russian text in Notes → **Russian**
@@ -53,7 +69,7 @@ Determine communication language from Contact Name, Notes, Contact details:
 - English names, international context → **English**
 - If unclear → **Spanish** (safest default for Spain-based business)
 
-### 2c. Client Typology
+### 2b. Client Typology
 
 From Category, Company Name, Notes, Contact Name:
 - **Hotel GM / Chain director** → formal, structured, data-driven messaging
@@ -62,50 +78,48 @@ From Category, Company Name, Notes, Contact Name:
 - **Agent** → professional, opportunity-focused
 - **Cafe / small venue** → casual, friendly, short messages
 
-### 2d. Stage-Appropriate Action
+### 2c. Stage-Appropriate Action Type
 
-| Stage | Default Action Type | Timing |
+| Stage | Default Action Type | Optimal Timing (when date is empty/overdue) |
 |---|---|---|
 | Cold (1st message sent) | Follow-up #1 | 5-7 days after 1st message |
 | Cold (no 1st message) | First touch | Today or tomorrow |
 | Replied | Continue conversation / propose meeting | 1-2 days |
-| Meeting Planned | Send reminder day before | Day before meeting |
+| Meeting Planned | Send reminder day before | Day before the meeting |
 | Meeting held | Follow-up with next steps | 1-2 days after meeting |
 | Proposal | Push to decision / address objections | 3-5 days |
 | Won | Onboarding / delivery kickoff | 1-2 days |
 
-## Step 3: Generate Next Actions
+**Timing rules (only when setting/updating the date):**
+- Skip weekends (Saturday/Sunday) — shift to Monday
+- If Cold without reply for 14+ days → 1 week out (low priority)
+- If multiple leads end up on same day, that's fine — we don't artificially spread
 
-For each lead that needs update, generate:
+## Step 3: Generate Fields
 
-### Next Action (what to do)
+### Next Action
+
 Short action description in Russian. Examples:
 - «Follow-up в Instagram»
 - «Отправить предложение по email»
 - «Напомнить о встрече»
 - «Позвонить, уточнить решение»
 
-### Next Action Date
-Based on Stage timing table above. Rules:
-- Never set on weekends (Saturday/Sunday)
-- Distribute across the week (don't pile 15 follow-ups on Monday)
-- If lead has been Cold with no reply for 14+ days → set date 1 week out (low priority)
-- Overdue leads → set to today or tomorrow
-
 ### Next Action Message
+
 Ready-to-copy message in the client's language.
 
 **VOICE RULES (STRICT):**
 
 1. **No AI-slop.** No "надеюсь, у вас все хорошо", no "хотел бы уточнить", no "в рамках нашего сотрудничества". Write like a human.
 
-2. **No em-dashes (—).** Only hyphens (-) where grammatically needed. Em-dash is the #1 AI marker in Russian.
+2. **No em-dashes.** Only hyphens where grammatically needed. Em-dash is the #1 AI marker in Russian.
 
 3. **No letter ё.** Always use е: еще, все, ведет, объем. Exception: where meaning changes (все vs всё).
 
 4. **Nastya's voice.** Warm, direct, energetic. She writes like she talks in a messenger:
    - Can use `)` or `))` sparingly (1-2 per message MAX, not every sentence)
-   - Can use ONE emoji per message where natural (🙌 ☕ 👋), not more
+   - Can use ONE emoji per message where natural, not more
    - Short sentences. No complex subordinate clauses.
    - Asks concrete questions, not vague "как дела"
    - Gets to the point in the first sentence
@@ -114,7 +128,7 @@ Ready-to-copy message in the client's language.
 
 6. **Context-aware.** If Notes say "возражение - партнер против" — the message must address THAT, not generic follow-up. If the lead replied with a specific question — answer it.
 
-7. **Short.** Follow-up messages: 2-4 sentences. First touch: 3-5 sentences. Proposal push: 3-4 sentences.
+7. **Short.** Follow-up: 2-4 sentences. First touch: 3-5 sentences. Proposal push: 3-4 sentences.
 
 8. **Spanish messages** follow the same principles: natural, warm, direct. No "Estimado/a", no "Le escribo para...". Use "Hola [Name]," and get to the point. Tu/usted based on typology.
 
@@ -140,38 +154,35 @@ Ready-to-copy message in the client's language.
 
 ## Step 4: Update Notion
 
-For each lead that needs update, use the Notion page update tool:
+For each lead, apply updates per the Processing Logic above. Only write the fields that actually changed:
 
 ```
 notion-update-page:
   url: [lead's Notion URL]
   properties:
-    Next Action Date: [calculated date]
-    Next Action: [action description]
-    Next Action Message: [ready-to-send message]
+    Next Action Date: [only if empty or was overdue]
+    Next Action: [only if empty or stale]
+    Next Action Message: [only if empty or stale]
 ```
 
 ## Step 5: Report
 
-After updating all leads, produce a summary in Russian:
+After processing all leads, produce a summary in Russian:
 
 ```
 📋 CRM Plan — [today's date]
 
-Обновлено: X лидов из Y
+Всего лидов: Y
+Обновлено: X
 
-На сегодня:
-- [Company] — [Action] — [Stage]
-- [Company] — [Action] — [Stage]
-
-На завтра:
+Изменения:
+- [Company] ([Stage]) → дата: [...] | action: [...] | message: [обновлено/без изменений]
 - ...
 
-На этой неделе:
-- ...
-
-Не тронуто (уже запланировано): Z лидов
+Даты не тронуты (запланировано вручную): Z лидов
 ```
+
+Group by Company, show what changed per lead. Keep the report compact.
 
 ## Notes
 
