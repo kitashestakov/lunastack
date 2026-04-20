@@ -1,17 +1,17 @@
 ---
-name: crm-plan
+name: horeca-crm-plan
 description: |
   Plan next actions for all leads in the HoReCa CRM.
   Fills empty or overdue Next Action Date / Next Action / Next Action Message.
   Generates ready-to-send messages in the client's language and Nastya's voice.
-  Use when: "crm plan", "запланируй crm", "что делать по лидам", "crm-plan".
+  Use when: "horeca crm plan", "запланируй crm", "что делать по лидам", "horeca-crm-plan".
 user-invocable: true
 ---
 
 Read the file `lib/preamble.md` and follow all rules defined there.
 Read the file `ETHOS.md` for tone of voice guidance.
 
-# /crm-plan — Планирование действий по CRM
+# /horeca-crm-plan — Планирование действий по CRM
 
 ## Purpose
 

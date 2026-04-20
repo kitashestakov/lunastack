@@ -1,0 +1,5 @@
+2026-04-03T14:58:30.269Z [browse] No available port after 5 attempts in range 10000-60000
+Error: [browse] No available port after 5 attempts in range 10000-60000
+    at findPort (/Users/kita/.claude/skills/gstack/browse/src/server.ts:585:13)
+    at async start (/Users/kita/.claude/skills/gstack/browse/src/server.ts:800:22)
+    at processTicksAndRejections (native:7:39)
