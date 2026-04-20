@@ -99,15 +99,24 @@ From Category, Company Name, Notes, Contact Name:
 
 ### Next Action
 
-Short action description in Russian. Examples:
+Short action description in Russian. **ТОЛЬКО РУССКИЙ ЯЗЫК** — никогда не пиши сюда на английском, даже если лид англоязычный. Это поле видит Настя для навигации по своему CRM.
+
+Examples (правильно):
 - «Follow-up в Instagram»
 - «Отправить предложение по email»
 - «Напомнить о встрече»
 - «Позвонить, уточнить решение»
+- «Запланировать встречу»
+
+Examples (НЕПРАВИЛЬНО, никогда не пиши так):
+- «Follow-up reminder»
+- «Meeting reminder»
+- «Send proposal»
+- «Schedule meeting»
 
 ### Next Action Message
 
-Ready-to-copy message in the client's language.
+**Schema note:** `Next Action Message` is a `text` property. Write the full ready-to-send message directly into this field. Don't use a short label or tag — put the ENTIRE message (2-5 sentences, ready to copy-paste into Telegram/WhatsApp/Instagram).
 
 **VOICE RULES (STRICT):**
 
