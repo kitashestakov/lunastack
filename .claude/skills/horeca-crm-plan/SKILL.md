@@ -17,6 +17,69 @@ Read the file `ETHOS.md` for tone of voice guidance.
 
 CEO не должна думать, что писать и когда. Она открывает CRM и видит по каждому лиду готовое сообщение и дату следующего контакта. Скилл проходит по ВСЕЙ таблице и заполняет поля Next Action / Next Action Message для каждого лида, плюс ставит оптимальную Next Action Date там, где она не задана вручную или просрочена.
 
+## Product Context (ЧИТАТЬ ПЕРВЫМ)
+
+### Что мы продаем HoReCa-клиентам
+
+**Core offer:** AI-augmented full-service recruitment на **подписке**.
+- **€5,000/month flat**, unlimited hires
+- Все роли HoReCa: executive chef, sous, line cooks, FOH lead, servers, ops director, concierge, front desk, housekeeping supervisor, revenue manager, F&B director
+- Dedicated recruiter, embedded в бренд клиента
+- Pre-opening capability (первый shortlist в течение недели)
+- Replacement guarantee: если человек ушел — заменяем без extra invoice
+- Commit: один opening cycle (4-8 недель), дальше month-to-month
+
+**Real-world proof:** Fresora (Vita Core SL, Barcelona) — 17 hires за 4 недели, два ресторана открыты одновременно. Это наш главный кейс, можно ссылаться.
+
+### Позиционирование относительно основного Luna Pastel
+
+- Luna Pastel — 10-летнее рекрутинговое агентство, **основной продукт — IT-рекрутинг** (Web3, Web/Mobile, Fintech, AI, Affiliate Marketing, C-Level Headhunting).
+- **HoReCa — newest vertical, не основной бизнес.** Same proven system, applied to a new industry.
+- В сообщениях HoReCa-клиентам IT-линию **НЕ упоминаем**. Это отдельный продукт с отдельной командой и подходом.
+- Правильно: «Luna Pastel помогает отелям и ресторанам Испании с наймом». НЕ надо: «Luna Pastel — агентство для HoReCa» (ложь) или «у нас также есть IT-рекрутинг» (не релевантно клиенту).
+
+### УТП (чем отличаемся от обычных HR-агентств в HoReCa)
+
+1. **Subscription, не per-placement.** Обычный HR в HoReCa берет €3-8K за найм. Три найма = €24K+. У нас €5K/мес с unlimited hires.
+2. **Aligned incentives.** Мы теряем деньги на bad hires (бесплатная замена), поэтому структурно заинтересованы в retention. У per-placement агентств incentive противоположный — текучка им выгодна.
+3. **AI-augmented sourcing + живой recruiter.** Не software-only (как Harri/Workable), не enterprise-only AI (как Paradox), не просто job board. Полный цикл: sourcing → screening → placement → retention tracking.
+4. **Pre-opening specialty.** Работаем с группами, где открытие нельзя сдвинуть на неделю.
+
+### Кто такая Nastya
+
+**Анастасия Щеголева (Nastya)** — Founder & CEO Luna Pastel. Пишет от первого лица как founder, не employee.
+- Испанский: «Soy Nastya, founder de Luna Pastel»
+- Русский: «Настя, founder Luna Pastel» или просто по имени в неформальном контакте
+
+НЕ «представитель», «менеджер», «сотрудник».
+
+### Ideal Customer Profile
+
+- **P1 (highест pain):** QSR / fast-food chains 5+ локаций, full-service restaurant groups 5+ локаций
+- **P2:** Hotel chains (mid-to-upscale), 50-200 staff per property
+- **P3:** Contract catering (enterprise)
+- В CRM также попадают independent groups 2-4 локации и single-location — им продаем тот же продукт, подстраивая позиционирование под меньший масштаб
+- Партнеры/агенты в CRM — это не прямые клиенты, а источники referral'ов или co-selling
+
+### Что НЕЛЬЗЯ писать в сообщениях
+
+- **Никогда не цитируй investor-pitch цифры** (TAM €12-15B, €6M ARR, 75-80% gross margin, LTV/CAC, unit economics). Это для инвесторов, не для клиентов.
+- **Никогда не упоминай IT-рекрутинг** как часть Luna Pastel в HoReCa outreach.
+- **Не обещай точные метрики**, которых клиент не выводил сам («сократим ваш turnover на 50%» → звучит как брошюра).
+- **Не пиши «уникальное предложение»** или «лучшие на рынке» — говори конкретикой: «€5K в месяц, все роли, замены включены».
+
+### Почему voice отличается от основного Luna Pastel ETHOS
+
+Основной `ETHOS.md` Luna Pastel предписывает формальный tone: «вы», без смайликов, 80-120 слов в первом касании. Это откалибровано под IT C-level и senior engineers.
+
+В HoReCa tone осознанно **теплее и casual**:
+- На «ты» с owner'ами ресторанов — они сами так пишут
+- 1 emoji допустим, `))` редко — это мессенджер, не LinkedIn
+- Короче (2-5 предложений) — рестораторы заняты сервисом, не читают длинное
+- Voice Насти как founder, а не Luna Pastel corporate
+
+Это не нарушение ETHOS, а его осознанная адаптация под другой рынок. Если лид — GM крупной сети отелей, возвращайся ближе к формальному ETHOS. Если owner семейного ресторана — полный casual.
+
 ## Safety Rule (CRITICAL)
 
 **Next Action Date можно ставить или менять ТОЛЬКО если:**
