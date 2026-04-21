@@ -2,7 +2,8 @@
 name: horeca-crm-plan
 description: |
   Plan next actions for all leads in the HoReCa CRM.
-  Fills Next Action Date / Next Action / Next Action Message per lead.
+  Writes ONLY to two Claude-scoped columns: "🔸 Claude: Action" and "🔸 Claude: Message".
+  Never touches other columns — Настя controls Stage / Next Action / Next Action Date / Notes herself.
   Generates ready-to-send messages in the client's language and Nastya's voice.
   Use when: "horeca crm plan", "запланируй crm", "что делать по лидам", "horeca-crm-plan".
 user-invocable: true
@@ -11,11 +12,18 @@ user-invocable: true
 Read the file `lib/preamble.md` and follow all rules defined there.
 Read the file `ETHOS.md` for tone of voice guidance.
 
-# /horeca-crm-plan — Планирование действий по CRM
+# /horeca-crm-plan — Подсказки действий по CRM
 
 ## Purpose
 
-CEO не должна думать, что писать и когда. Она открывает CRM и видит по каждому лиду готовое сообщение и дату следующего контакта. Скилл проходит по ВСЕЙ таблице и заполняет поля Next Action / Next Action Message для каждого лида, плюс ставит оптимальную Next Action Date там, где она не задана вручную или просрочена.
+Настя сама управляет своей воронкой: колонки `Next Action`, `Next Action Date`, `Stage`, `Notes` — ее территория и отражают ее решения. Скилл работает в **параллельных** Claude-колонках:
+
+- `🔸 Claude: Action` — что бы Claude предложил делать дальше
+- `🔸 Claude: Message` — готовое сообщение клиенту
+
+Настя сравнивает свою версию с Claude-подсказкой и копирует в свои поля то, с чем согласна. Это second opinion, не замена ее решений.
+
+Скилл проходит по ВСЕЙ таблице и для каждого лида заполняет/перезаписывает две Claude-колонки на основе полного контекста (Stage, Notes, комментарии, скриншоты, web-research).
 
 ## Product Context (ЧИТАТЬ ПЕРВЫМ)
 
@@ -55,7 +63,7 @@ CEO не должна думать, что писать и когда. Она о
 
 ### Ideal Customer Profile
 
-- **P1 (highест pain):** QSR / fast-food chains 5+ локаций, full-service restaurant groups 5+ локаций
+- **P1 (highest pain):** QSR / fast-food chains 5+ локаций, full-service restaurant groups 5+ локаций
 - **P2:** Hotel chains (mid-to-upscale), 50-200 staff per property
 - **P3:** Contract catering (enterprise)
 - В CRM также попадают independent groups 2-4 локации и single-location — им продаем тот же продукт, подстраивая позиционирование под меньший масштаб
@@ -80,37 +88,22 @@ CEO не должна думать, что писать и когда. Она о
 
 Это не нарушение ETHOS, а его осознанная адаптация под другой рынок. Если лид — GM крупной сети отелей, возвращайся ближе к формальному ETHOS. Если owner семейного ресторана — полный casual.
 
-## Safety Rule (CRITICAL)
+## Write Scope (CRITICAL)
 
-**Next Action Date можно ставить или менять ТОЛЬКО если:**
-- она пустая, ИЛИ
-- она строго в прошлом (просрочено)
+**Скилл пишет ТОЛЬКО в эти два столбца:**
+- `🔸 Claude: Action` (text)
+- `🔸 Claude: Message` (text)
 
-Если дата уже стоит и >= сегодня — это ручное решение CEO или менеджера, **не трогай ее**.
+**Никогда не трогает:**
+- `Next Action` — Настина колонка, отражает ее план
+- `Next Action Date` — Настин календарь
+- `Stage`, `Notes`, `Category`, `Source`, `Company Name`, `Contact Name`, `Contact details`, `1st message sent` — source-of-truth данные
 
-**Next Action и Next Action Message обновляются ВСЕГДА,** если они пустые или явно устарели (не соответствуют текущему Stage / последним Notes). Это касается даже лидов с будущей датой: мы не трогаем дату, но помогаем с содержанием.
+**В Claude-колонках разрешено:**
+- Заполнять пустые ячейки
+- **Перезаписывать** существующие, если новый анализ дает лучший результат (это ок, это и есть работа скилла — актуализировать подсказки)
 
-## Processing Logic (per lead)
-
-Для каждого лида вычисляем три поля независимо:
-
-### Next Action Date
-
-- Пустая → рассчитай оптимальную дату
-- В прошлом → поставь на сегодня или ближайший разумный день
-- Сегодня или в будущем → **НЕ ТРОГАЙ**
-
-### Next Action
-
-- Пустое → заполни
-- Заполнено, но не соответствует текущему Stage (например, стадия Meeting held, а в Next Action «позвонить для первого контакта») → перепиши
-- Заполнено и соответствует Stage → не трогай
-
-### Next Action Message
-
-- Пустое → сгенерируй
-- Заполнено, но контекст изменился (новая Note, новый Stage) → перепиши
-- Заполнено и актуально → не трогай
+Это инвариант скилла. Если при формировании payload для `notion-update-page` в properties попадает что-либо кроме `🔸 Claude: Action` и `🔸 Claude: Message` — это баг, останавливайся и не вызывай update.
 
 ## Step 1: Fetch CRM
 
@@ -143,20 +136,17 @@ From Category, Company Name, Notes, Contact Name:
 
 ### 2c. Stage-Appropriate Action Type
 
-| Stage | Default Action Type | Optimal Timing (when date is empty/overdue) |
+| Stage | Default Action Type | Timing context (для формулировки Action/Message) |
 |---|---|---|
-| Cold (1st message sent) | Follow-up #1 | 5-7 days after 1st message |
-| Cold (no 1st message) | First touch | Today or tomorrow |
-| Replied | Continue conversation / propose meeting | 1-2 days |
-| Meeting Planned | Send reminder day before | Day before the meeting |
-| Meeting held | Follow-up with next steps | 1-2 days after meeting |
-| Proposal | Push to decision / address objections | 3-5 days |
-| Won | Onboarding / delivery kickoff | 1-2 days |
+| Cold (1st message sent) | Follow-up #1 | ~5-7 дней после 1st message |
+| Cold (no 1st message) | First touch | в ближайшие дни |
+| Replied | Continue conversation / propose meeting | быстро, 1-2 дня |
+| Meeting Planned | Send reminder day before | за день до встречи |
+| Meeting held | Follow-up with next steps | 1-2 дня после встречи |
+| Proposal | Push to decision / address objections | 3-5 дней |
+| Won | Onboarding / delivery kickoff | 1-2 дня |
 
-**Timing rules (only when setting/updating the date):**
-- Skip weekends (Saturday/Sunday) — shift to Monday
-- If Cold without reply for 14+ days → 1 week out (low priority)
-- If multiple leads end up on same day, that's fine — we don't artificially spread
+Эта таблица нужна ТОЛЬКО чтобы правильно выбрать TYPE действия и встроить timing-контекст в текст. Мы не ставим дату в CRM — это поле Насти.
 
 ### 2d. Deep Research (обязательно для КАЖДОГО лида)
 
@@ -174,7 +164,7 @@ notion-get-comments: [page_id]
 1. Возьми URL из результата `notion-fetch`
 2. Скачай: `curl -L -o /tmp/lead-img.jpg "<image_url>"`
 3. Открой через Read: `Read /tmp/lead-img.jpg` — картинка придёт визуально
-4. Проанализируй что на ней (скриншот переписки, визитка, меню, пост IG, фото заведения) и используй контекст в Next Action Message
+4. Проанализируй что на ней (скриншот переписки, визитка, меню, пост IG, фото заведения) и используй контекст в `🔸 Claude: Message`
 
 Если на скриншоте переписка — конкретно процитируй/сошлись на то, что клиент написал. Если меню или интерьер — упомяни концепцию.
 
@@ -186,9 +176,9 @@ notion-get-comments: [page_id]
 
 Используй находки в сообщении естественно: «видела, что вы открываете вторую точку в Грасии» работает в 10 раз лучше, чем generic follow-up.
 
-## Step 3: Generate Fields
+## Step 3: Generate Claude-Column Values
 
-### Next Action
+### 🔸 Claude: Action
 
 Short action description in Russian. **ТОЛЬКО РУССКИЙ ЯЗЫК** — никогда не пиши сюда на английском, даже если лид англоязычный. Это поле видит Настя для навигации по своему CRM.
 
@@ -205,9 +195,9 @@ Examples (НЕПРАВИЛЬНО, никогда не пиши так):
 - «Send proposal»
 - «Schedule meeting»
 
-### Next Action Message
+### 🔸 Claude: Message
 
-**Schema note:** `Next Action Message` is a `text` property. Write the full ready-to-send message directly into this field. Don't use a short label or tag — put the ENTIRE message (2-5 sentences, ready to copy-paste into Telegram/WhatsApp/Instagram).
+Full ready-to-send message. **Пиши целиком, 2-5 предложений, копипаст-ready для Telegram/WhatsApp/Instagram/email.** Не короткий label, не tag.
 
 **VOICE RULES (STRICT):**
 
@@ -244,7 +234,7 @@ Examples (НЕПРАВИЛЬНО, никогда не пиши так):
 > Hola Eugeni, quería ver si ya tienes la lista de posiciones. En cuanto la tenga, te preparo un plan de búsqueda con plazos concretos. ¿Te viene bien una llamada corta esta semana?
 
 **Spanish, cold first touch via Instagram:**
-> Hola! Soy Nastya de Luna Pastel, ayudamos a restaurantes con la contratación de equipo. Vi que tenéis un concepto muy chulo. ¿Buscáis personal ahora o tenéis todo cubierto?
+> Hola! Soy Nastya, founder de Luna Pastel. Ayudamos a restaurantes con la contratación de equipo. Vi que tenéis un concepto muy chulo. ¿Buscáis personal ahora o tenéis todo cubierto?
 
 ### Examples of BAD messages (never generate these):
 
@@ -254,16 +244,17 @@ Examples (НЕПРАВИЛЬНО, никогда не пиши так):
 
 ## Step 4: Update Notion
 
-For each lead, apply updates per the Processing Logic above. Only write the fields that actually changed:
+For each lead, write ONLY to the two Claude-columns:
 
 ```
 notion-update-page:
   url: [lead's Notion URL]
   properties:
-    Next Action Date: [only if empty or was overdue]
-    Next Action: [only if empty or stale]
-    Next Action Message: [only if empty or stale]
+    "🔸 Claude: Action":  "<short Russian action>"
+    "🔸 Claude: Message": "<full ready-to-send message in lead's language>"
 ```
+
+**Invariant.** Никогда не включай в `properties` другие ключи. Если скрипт/промпт хочет записать `Next Action`, `Next Action Date`, `Stage`, `Notes` или любое другое поле — это баг, останавливайся и сообщай об этом в отчете вместо записи.
 
 ## Step 5: Report
 
@@ -273,19 +264,19 @@ After processing all leads, produce a summary in Russian:
 📋 CRM Plan — [today's date]
 
 Всего лидов: Y
-Обновлено: X
+Обновлено Claude-колонок: X
 
-Изменения:
-- [Company] ([Stage]) → дата: [...] | action: [...] | message: [обновлено/без изменений]
+По лидам:
+- [Company] ([Stage]) — Action: «...» | Message: готово
+- [Company] ([Stage]) — Action: «...» | Message: готово
 - ...
-
-Даты не тронуты (запланировано вручную): Z лидов
 ```
 
-Group by Company, show what changed per lead. Keep the report compact.
+Group by Company. Сообщения в отчет НЕ вставляй целиком (они в Notion) — достаточно пометки «готово/обновлено».
 
 ## Notes
 
 - This skill does NOT require session binding to a vacancy. It operates on the CRM sales database, not the Vacancies recruitment database.
 - If the CRM has more than 50 leads, process them in batches and update progressively.
 - **Качество важнее скорости и стоимости API.** Для КАЖДОГО лида (включая Cold) выполняй полный Deep Research из Step 2d: комментарии, child blocks страницы, image attachments, web-research. Не пропускай этапы ради экономии вызовов.
+- **Контроль воронки — у Насти.** Скилл никогда не касается `Next Action`, `Next Action Date`, `Stage`, `Notes` и других Настиных полей. Claude-колонки — это second opinion, не команды.
