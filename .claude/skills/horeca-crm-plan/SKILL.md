@@ -95,6 +95,34 @@ From Category, Company Name, Notes, Contact Name:
 - If Cold without reply for 14+ days → 1 week out (low priority)
 - If multiple leads end up on same day, that's fine — we don't artificially spread
 
+### 2d. Deep Research (обязательно для КАЖДОГО лида)
+
+**НЕ экономь на API-вызовах.** Настя готова ждать дольше ради качества — цель, чтобы каждое сообщение звучало от человека, который реально понимает, кто перед ним, а не от бота, клепающего шаблон по Stage.
+
+**1. Комментарии Notion.** Читай все комментарии на странице лида — и для холодных тоже. Настя часто оставляет там контекст, которого нет в Notes («был на встрече Horeca Expo», «знакомы через Катю», «писала в IG — не ответил»).
+
+```
+notion-get-comments: [page_id]
+```
+
+**2. Содержимое страницы.** `notion-fetch` возвращает child blocks (callouts, toggles, свободные заметки) — читай их, там часто лежат транскрипты звонков и детали встреч.
+
+**3. Скриншоты и изображения.** Если на странице или в комментарии есть image:
+1. Возьми URL из результата `notion-fetch`
+2. Скачай: `curl -L -o /tmp/lead-img.jpg "<image_url>"`
+3. Открой через Read: `Read /tmp/lead-img.jpg` — картинка придёт визуально
+4. Проанализируй что на ней (скриншот переписки, визитка, меню, пост IG, фото заведения) и используй контекст в Next Action Message
+
+Если на скриншоте переписка — конкретно процитируй/сошлись на то, что клиент написал. Если меню или интерьер — упомяни концепцию.
+
+**4. Web-research.** Когда есть зацепка — гугли:
+- Сайт компании из Contact details / Notes → `WebFetch` главной: концепция, локации, позиционирование, текущие вакансии на сайте
+- Название ресторана/отеля → `WebSearch "[название] Barcelona"` (или другой город) — свежие новости, открытия, награды, смена шефа
+- Instagram handle → `WebFetch` профиля, чтобы понять стиль, частоту постов, есть ли сейчас активная коммуникация про найм
+- Партнёр/агент → поиск по «имя + компания», чтобы понимать его бизнес-контекст
+
+Используй находки в сообщении естественно: «видела, что вы открываете вторую точку в Грасии» работает в 10 раз лучше, чем generic follow-up.
+
 ## Step 3: Generate Fields
 
 ### Next Action
@@ -197,4 +225,4 @@ Group by Company, show what changed per lead. Keep the report compact.
 
 - This skill does NOT require session binding to a vacancy. It operates on the CRM sales database, not the Vacancies recruitment database.
 - If the CRM has more than 50 leads, process them in batches and update progressively.
-- Read comments inside each Notion page for additional context ONLY for leads that are Replied or above (to save API calls). Cold leads get generic timing without page-level research.
+- **Качество важнее скорости и стоимости API.** Для КАЖДОГО лида (включая Cold) выполняй полный Deep Research из Step 2d: комментарии, child blocks страницы, image attachments, web-research. Не пропускай этапы ради экономии вызовов.
