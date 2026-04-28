@@ -35,8 +35,7 @@
       "Bash(curl -I https://huggingface.co)",
       "Edit(/.claude/skills/vacancy/**)",
       "Edit(/.claude/skills/screening/**)",
-      "Edit(/.claude/skills/briefing/**)",
-      "Edit(/.claude/settings.json)"
+      "Edit(/.claude/skills/briefing/**)"
     ],
     "deny": [
       "mcp__claude_ai_Notion__notion-create-database",
