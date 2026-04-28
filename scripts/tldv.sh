@@ -10,7 +10,7 @@ set -euo pipefail
 # Subcommand `meeting-list-mine` ALWAYS filters the API response so only
 # meetings where the configured user's email is in invitees / participants /
 # attendees are returned. The /calls skill must use `meeting-list-mine`,
-# never raw `meeting-list`. The shared API token (1Password "tldv API Key")
+# never raw `meeting-list`. The shared API token (1Password "tldv Token")
 # could in theory see all meetings, but Luna Stack only ever surfaces the
 # ones a recruiter actually attended.
 #

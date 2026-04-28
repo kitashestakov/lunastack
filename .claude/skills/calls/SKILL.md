@@ -32,7 +32,7 @@ cat ~/.luna-stack/config.yaml
 Выведи как plain text (НЕ AskUserQuestion):
 
 ```
-Один раз настрою доступ к tldv. Открой 1Password, найди запись "tldv API Key", скопируй токен и вставь сюда.
+Один раз настрою доступ к tldv. Открой 1Password, найди запись "tldv Token", скопируй токен и вставь сюда.
 ```
 
 Wait for user to paste the token. Это free-text input.
