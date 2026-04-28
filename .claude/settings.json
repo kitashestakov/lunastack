@@ -22,10 +22,21 @@
       "Bash(git add *)",
       "Bash(git commit *)",
       "Bash(mkdir -p ~/.luna-stack)",
+      "Bash(mkdir -p ~/.luna-stack/*)",
       "Bash(tee ~/.luna-stack/config.yaml *)",
+      "Bash(ffmpeg *)",
+      "Bash(whisper-cli *)",
+      "Bash(command -v *)",
+      "Bash(ls ~/.luna-stack/*)",
+      "Bash(cat ~/.luna-stack/tmp/*)",
+      "Bash(brew install *)",
+      "Bash(brew --version)",
+      "Bash(curl -L -o ~/.luna-stack/whisper/* *)",
+      "Bash(curl -I https://huggingface.co)",
       "Edit(/.claude/skills/vacancy/**)",
       "Edit(/.claude/skills/screening/**)",
-      "Edit(/.claude/skills/briefing/**)"
+      "Edit(/.claude/skills/briefing/**)",
+      "Edit(/.claude/settings.json)"
     ],
     "deny": [
       "mcp__claude_ai_Notion__notion-create-database",
@@ -40,7 +51,6 @@
       "Bash(git push --force-with-lease *)",
       "Bash(git reset *)",
       "Bash(git checkout *)",
-      "Bash(curl *)",
       "Bash(wget *)"
     ]
   },
@@ -50,7 +60,15 @@
     "network": {
       "allowedDomains": [
         "api.huntflow.ai",
-        "github.com"
+        "github.com",
+        "huggingface.co",
+        "cdn-lfs.huggingface.co",
+        "cdn-lfs-us-1.huggingface.co",
+        "formulae.brew.sh",
+        "ghcr.io",
+        "pkg-containers.githubusercontent.com",
+        "objects.githubusercontent.com",
+        "raw.githubusercontent.com"
       ]
     },
     "filesystem": {
@@ -64,7 +82,6 @@
         "~/.config/gcloud",
         "~/Documents",
         "~/Desktop",
-        "~/Downloads",
         "~/.env",
         "~/.zshrc",
         "~/.bashrc",
@@ -73,7 +90,8 @@
         "~/.npmrc"
       ],
       "allowRead": [
-        "~/.luna-stack"
+        "~/.luna-stack",
+        "~/Downloads"
       ]
     }
   }
