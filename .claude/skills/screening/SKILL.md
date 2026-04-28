@@ -42,6 +42,8 @@ Use AskUserQuestion:
 - options:
   - label: "Выбрать из воронки в Хантфлоу (Рекомендуется)"
     description: "Покажу список кандидатов по этой вакансии — выбери нужного"
+  - label: "Транскрибт скрининг-звонка из tldv"
+    description: "Подтяну запись из tldv (только твои звонки), возьму транскрибт + highlights и оценю по нему"
   - label: "Приложить резюме или описание"
     description: "Вставь текст резюме, заметки или прикрепи файл"
 
@@ -90,7 +92,19 @@ Output as plain text, then wait:
 
 Wait for the recruiter to type their response.
 
-### Option B: Resume or description
+### Option B: tldv transcript
+
+Делегируй выбор и вытаскивание звонка скиллу `/calls`. Прочитай `.claude/skills/calls/SKILL.md` целиком и выполни его последовательно: Pre-check 0 (token + email migration если надо) → Pre-check (whoami) → Step 2 (list mine) → Step 3 (recruiter picks) → Step 5b (полный транскрибт) **и** Step 5a (highlights, если есть).
+
+**Не сохраняй** транскрибт в карточку вакансии в этом flow — для скрининга нам нужны только данные в памяти. Просто получи текст транскрибта + highlights и положи их как «материал кандидата» в Step 3 этого скилла.
+
+После того как получил транскрибт — спроси имя кандидата (если в highlights/transcript оно не очевидно):
+
+«Как зовут кандидата по этому звонку?»
+
+Wait for free-text answer.
+
+### Option C: Resume or description
 
 Output as plain text, then wait:
 

@@ -200,7 +200,15 @@ mcp__claude_ai_Notion__notion-fetch
 
    Continue without Huntflow. In the summary, show: «⚠️ Вакансия не привязана к Хантфлоу — воронка недоступна» instead of the funnel section.
 
-5. **Show combined summary** to the recruiter:
+5. **Get tldv call count for this vacancy.**
+
+   Используй `scripts/tldv.sh meeting-list-mine --query "<Client name>"` чтобы получить релевантные звонки рекрутера, в названии которых упоминается клиент. Если skill отвечает ошибкой (нет токена / нет email в config / API недоступен) — silently fall back на «N/A», не блокируй summary.
+
+   Парсе ответ — это массив встреч после фильтра по email. Возьми длину массива. Если 0 — пометь как «звонков нет», иначе «N релевантных».
+
+   (Для MVP это простая фильтрация по client name. Полноценный auto-link с проверкой даты и participant-домена — задача `/calls` Step 6a.)
+
+6. **Show combined summary** to the recruiter:
 
 «**[Client] — [Position]**
 
@@ -222,7 +230,11 @@ mcp__claude_ai_Notion__notion-fetch
 • Скрининг: [N]
 • Интервью с клиентом: [N]
 • Оффер: [N]
-• Всего кандидатов: [N]»
+• Всего кандидатов: [N]
+
+📞 **Звонки в tldv:** [N релевантных / звонков нет / N/A — токен tldv не настроен]»
+
+If there are tldv calls (N > 0), include in next-actions options: «Сохранить транскрибт последнего звонка → /calls» (Рекомендуется if Stage = Active and there are unattached recent calls).
 
 6. **Suggest next actions** using AskUserQuestion.
 

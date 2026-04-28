@@ -12,6 +12,7 @@
       "WebSearch",
       "WebFetch",
       "Bash(scripts/huntflow.sh *)",
+      "Bash(scripts/tldv.sh *)",
       "Bash(cat ~/.luna-stack/config.yaml)",
       "Bash(git pull)",
       "Bash(git log *)",
@@ -67,7 +68,10 @@
         "ghcr.io",
         "pkg-containers.githubusercontent.com",
         "objects.githubusercontent.com",
-        "raw.githubusercontent.com"
+        "raw.githubusercontent.com",
+        "pasta.tldv.io",
+        "api.tldv.io",
+        "tldv.io"
       ]
     },
     "filesystem": {

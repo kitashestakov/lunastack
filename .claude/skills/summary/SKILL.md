@@ -39,9 +39,24 @@ Use AskUserQuestion:
 - question: «Как передашь информацию о кандидате?»
 - header: "Формат"
 - options:
-  - "Вставлю текст (Рекомендуется)" — recruiter will paste screening transcript, notes, or summary
+  - "Транскрибт скрининг-звонка из tldv (Рекомендуется)" — pull recording transcript + highlights and use as candidate context
+  - "Вставлю текст" — recruiter will paste screening transcript, notes, or summary
   - "Расскажу своими словами" — recruiter will describe the candidate verbally
   - "Загружу файл" — recruiter will share a file with notes
+
+### Если выбрана опция «Транскрибт из tldv»
+
+Делегируй выбор и вытаскивание звонка скиллу `/calls`. Прочитай `.claude/skills/calls/SKILL.md` целиком и выполни последовательно: Pre-check 0 (token + email migration если нужно) → Pre-check (whoami) → Step 2 (`meeting-list-mine`) → Step 3 (recruiter picks) → Step 5b (полный транскрибт) **и** Step 5a (highlights, если доступны).
+
+**Не сохраняй** транскрибт в карточку вакансии в этом flow — для саммари нам нужны только данные в памяти. Используй транскрибт + highlights как контекст «информация о кандидате» для Step 3.
+
+После того как получил данные из tldv — спроси имя кандидата, если оно не очевидно из транскрибта/highlights:
+
+«Как зовут кандидата по этому звонку?»
+
+Wait for free-text answer.
+
+### Иначе (текст / своими словами / файл)
 
 Wait for the recruiter to provide the candidate information.
 

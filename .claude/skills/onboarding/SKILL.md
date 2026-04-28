@@ -107,6 +107,24 @@ Then:
 
 Wait for the user to paste the refresh token. Do NOT use AskUserQuestion.
 
+### Step 6.5: tldv token + email
+
+tldv — это сервис записи звонков. У нас один общий токен, токен живёт в 1Password. Email рекрутера нужен, чтобы скилл `/calls` показывал ему только те звонки, где он был участником (security-инвариант: общий токен в теории даёт доступ ко всем встречам, но Luna Stack никогда не показывает чужие).
+
+Output as plain text, then STOP and wait:
+
+«Теперь подключим tldv (записи звонков). Найди в 1Password запись "tldv API Key", скопируй и вставь сюда.»
+
+Wait for user to paste the tldv token.
+
+**Email подставляется автоматически из карточки в Team-базе.** Из Step 5 у нас уже есть полная Team-DB запись рекрутера — оттуда поле `Email` (тип email) и идёт. Не спрашивай у рекрутера повторно.
+
+Если в Team-карточке email пустой — выведи как plain text:
+
+«У тебя в Notion-Команде не заполнено поле Email. Это нужно для `/calls` (фильтр звонков по участникам). Зайди в свою карточку, добавь email (тот, на который приходят инвайты в tldv), потом снова запусти /onboarding. Без этого `/calls` работать не будет.»
+
+И прерви onboarding на этом шаге. Не двигайся дальше — это исправляется один раз и быстро.
+
 ### Step 7: Detect Huntflow user ID
 
 Save a temporary config so huntflow.sh can authenticate:
@@ -121,14 +139,16 @@ name: "<confirmed name from Team DB>"
 role: "<role from Team DB>"
 specialization: [<list from Team DB>]
 notion_page_url: "<recruiter's Team DB page URL, e.g. https://www.notion.so/32ef91672e0080339149caaf8c965932>"
+email: "<email from Team DB Email property>"
 huntflow_access_token: "<access token from Step 6>"
 huntflow_refresh_token: "<refresh token from Step 6>"
 huntflow_user_id: ""
+tldv_api_token: "<tldv token from Step 6.5>"
 auto_upgrade: false
 EOF
 ```
 
-The `notion_page_url` is the recruiter's page URL from the Team database — used by /vacancy to filter vacancies by recruiter.
+The `notion_page_url` is the recruiter's page URL from the Team database — used by /vacancy to filter vacancies by recruiter. The `email` field is the source-of-truth for tldv participant filtering — see /calls.
 
 This uses `tee` which is allowed by the permissions config. Do NOT use the Write tool or `cat >` redirection.
 
@@ -153,9 +173,11 @@ name: "<confirmed name from Team DB>"
 role: "<role from Team DB>"
 specialization: [<list from Team DB>]
 notion_page_url: "<recruiter's Team DB page URL>"
+email: "<email from Team DB>"
 huntflow_access_token: "<access token from Step 6>"
 huntflow_refresh_token: "<refresh token from Step 6>"
 huntflow_user_id: "<user ID from Step 7>"
+tldv_api_token: "<tldv token from Step 6.5>"
 auto_upgrade: false
 EOF
 ```
@@ -174,6 +196,7 @@ Show available skills:
 • `/screening` — оценить кандидата по критериям вакансии
 • `/summary` — оформить саммари кандидата после скрининга
 • `/client-update` — сгенерировать апдейт клиенту по прогрессу
+• `/calls` — записи звонков из tldv: транскрибты, саммари, сохранение в карточку вакансии
 • `/funnel-review` — анализ воронки: конверсии, узкие места, рекомендации
 • `/handoff` — передать вакансию другому рекрутеру
 • `/luna-upgrade` — обновить Luna Stack
