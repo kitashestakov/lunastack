@@ -99,24 +99,44 @@ AskUserQuestion:
 
 ## Step 2: Get list
 
-Используй ВСЕГДА `meeting-list-mine` (не raw `meeting-list`):
+Используй ВСЕГДА `meeting-list-mine` (не `meeting-list-raw` — последняя только для дебага и не фильтрует):
 
 ```bash
 scripts/tldv.sh meeting-list-mine --limit 20
 ```
 
-Это возвращает только встречи, где email рекрутера в `invitees` / `participants` / `attendees`. Фильтр зашит в обвязке — Claude его не обходит.
+Это возвращает массив встреч, отфильтрованных так, что `.organizer.email == config.email` ИЛИ `.invitees[].email == config.email`. Фильтр зашит в shell-обвязке точечным jq-путём — Claude его не обходит.
 
 Если опция была «Найти конкретный звонок»:
 ```bash
 scripts/tldv.sh meeting-list-mine --query "<keyword from user>"
 ```
 
-Парсе ответ. Поля каждой встречи (могут отличаться в зависимости от tldv API):
-- `id` — meeting ID
-- `name` / `title` — название встречи
-- `happenedAt` / `startedAt` / `created` — дата (ISO)
-- `invitees[].email` — участники
+Параметр `--query` уходит на сторону tldv как server-side substring-фильтр по названию встречи.
+
+**Точная структура каждого элемента ответа** (verified against live tldv API):
+
+```json
+{
+  "id": "69eb857634346b00137b0b0e",
+  "name": "Andrew Romanyuk | Head of Online Sales at Neginski",
+  "happenedAt": "Tue Apr 28 2026 16:22:49 GMT+0000 (Coordinated Universal Time)",
+  "duration": 1053.146,
+  "invitees": [
+    {"name": "Alex Rocket", "email": "alexrocket@lunapastel.io"},
+    {"name": "Andrew Romanyuk", "email": "eandreyr@gmail.com"}
+  ],
+  "organizer": {"name": "Alex Rocket", "email": "alexrocket@lunapastel.io"},
+  "url": "https://tldv.io/app/meetings/69eb857634346b00137b0b0e",
+  "extraProperties": {"conferenceId": "..."}
+}
+```
+
+Заметки про поля:
+- `happenedAt` в list-эндпоинте — JS Date string, не ISO 8601. Для отображения возьми первые 16 символов (`Tue Apr 28 16:22`) или используй `url` чтобы открыть встречу в tldv UI с нормальным интерфейсом.
+- `duration` в секундах (float). При отображении конвертируй в минуты: `(duration / 60 | floor)` мин.
+- `organizer` — всегда object (проверено на 228 встречах в боевой базе).
+- `invitees` — всегда array, может быть пустым.
 
 ## Step 3: Choose meeting
 
@@ -124,11 +144,11 @@ scripts/tldv.sh meeting-list-mine --query "<keyword from user>"
 
 - question: «Какой звонок?»
 - header: «Звонок»
-- options: формат `"[date DD.MM] · [meeting name] · [N участников]"`
+- options: формат `"[DD.MM HH:MM] · [meeting name] · [N мин]"` где время — substring из `happenedAt`, минуты — `duration / 60`
 
 Если встреч больше 4 — добавь пятой опцией «Других звонков нет в показанных» и при выборе — повтори с большим `--limit` или попроси уточнить query.
 
-Если совсем 0 встреч — сообщи: «Не нашла звонков с твоим участием за последние [N]. Проверь, что email в `~/.luna-stack/config.yaml` совпадает с тем, на который ты получаешь tldv-инвайты.»
+Если совсем 0 встреч — сообщи: «Не нашла звонков с твоим участием за последние ~300 встреч в tldv. Проверь, что email в `~/.luna-stack/config.yaml` совпадает с тем, на который ты получаешь tldv-инвайты (поле `email`). Текущий: запусти `scripts/tldv.sh whoami` чтобы посмотреть.»
 
 ## Step 4: What to do with this call
 
@@ -145,16 +165,66 @@ AskUserQuestion:
 
 ## Step 5: Execute
 
+### Сначала: проверь 403 (free-plan organizer)
+
+Эндпоинты `meeting-transcript` и `meeting-highlights` возвращают HTTP 403 с body вида `{"name":"ForbiddenError","message":"This meeting was organized by a Free user and cannot be accessed via API."}`, если organizer встречи на бесплатном плане tldv. Скилл должен проверить это **первым** перед парсингом:
+
+```bash
+result=$(scripts/tldv.sh meeting-highlights <id>)
+if echo "$result" | jq -e '.name == "ForbiddenError"' >/dev/null 2>&1; then
+  # Cообщи пользователю и предложи альтернативу
+fi
+```
+
+При 403 сообщи в чате:
+
+«Встреча "[name]" была организована аккаунтом на бесплатном плане tldv ([organizer.email]) — API не отдаёт по ней транскрипт и саммари. Можно открыть встречу в браузере: [url] — там запись и AI-саммари доступны через UI.»
+
+И предложи через AskUserQuestion: «Что дальше?» с опциями «Открыть в tldv UI» (просто покажи URL), «Выбрать другую встречу» (вернись в Step 3), «Ввести саммари вручную» (запроси текст у рекрутера).
+
 ### 5a. Саммари
 
 ```bash
 scripts/tldv.sh meeting-highlights <meeting_id>
 ```
 
-Распарси ответ (highlights / summary / topics — смотри что вернул tldv) и покажи в чате как структурированный markdown. Группируй: ключевые темы, договорённости, действия.
+**Точная структура ответа:**
 
-Если tldv не вернул highlights (некоторые звонки могут быть без AI-саммари) — fallback: возьми транскрибт через `meeting-transcript`, и сгенерируй саммари сам по правилам:
+```json
+{
+  "meetingId": "69eb857634346b00137b0b0e",
+  "data": [
+    {
+      "text": "Компания Нигинский работает 6 лет с офисами в Москве и Дубае...",
+      "startTime": 0,
+      "source": "auto",
+      "topic": {
+        "title": "Описание позиции и компании",
+        "summary": "No Summary"
+      }
+    },
+    ...
+  ]
+}
+```
 
+Группируй `.data[]` по `.topic.title` и собери в markdown:
+
+```
+**Саммари звонка [meeting name] · [DD.MM HH:MM]**
+
+### [topic.title 1]
+- [data[].text если topic совпадает]
+- [data[].text]
+
+### [topic.title 2]
+- [data[].text]
+- ...
+```
+
+Если у `.topic.summary` есть содержательный текст (не "No Summary") — используй его как заголовок секции вместо `topic.title`.
+
+Если `.data` пустой массив — звонок не получил AI highlights (бывает у коротких или без речи). Fallback: возьми транскрипт через `meeting-transcript` и сгенерируй саммари сам:
 - 2-4 предложения общего вектора
 - bullets ключевых фактов (бюджет, имена, сроки, договорённости)
 - секция follow-up
@@ -167,7 +237,42 @@ scripts/tldv.sh meeting-highlights <meeting_id>
 scripts/tldv.sh meeting-transcript <meeting_id>
 ```
 
-Покажи в чате. Если ответ длинный (>200 строк) — предложи альтернативу: «Транскрибт большой ([N] строк). Хочешь сохраню в файл?»
+**Точная структура ответа:**
+
+```json
+{
+  "id": "transcript-id",
+  "meetingId": "meeting-id",
+  "data": [
+    {
+      "startTime": 0,
+      "endTime": 147,
+      "speaker": "Alexander Brezgin",
+      "text": "Есть компания Нигинский, 6 лет..."
+    },
+    ...
+  ]
+}
+```
+
+Каждый элемент `.data[]` — реплика с `speaker`, `text`, и таймингом в секундах. На реальных встречах бывает ~100-200 сегментов.
+
+Формат для показа в чате:
+
+```
+**Транскрибт [meeting name] · [DD.MM HH:MM]**
+
+**[Speaker A]** ([0:00]):
+[text]
+
+**[Speaker B]** ([2:27]):
+[text]
+...
+```
+
+Где время в скобках — `startTime` секунд → `MM:SS` (или `HH:MM:SS` для длинных).
+
+Если segments_count > 50 (длинный звонок) — предложи: «Транскрибт большой ([N] реплик, ~[M] минут). Хочешь покажу в чате целиком или сохраню в файл `~/.luna-stack/transcripts/[id].txt`?»
 
 ### 5c. Сохранить транскрибт в файл
 
@@ -276,8 +381,17 @@ AskUserQuestion:
 - **Email source of truth**: Notion-Команда. Если рекрутер хочет сменить email для tldv — менять в Notion, потом удалить `email:` из `~/.luna-stack/config.yaml` и запустить `/calls` — миграция подхватит новое значение из Notion.
 - **Token rotation**: если токен в 1Password обновили — рекрутеру надо удалить `tldv_api_token:` из config (или попросить администратора Luna Stack обновить), и при следующем `/calls` вставить новый.
 - **Cache**: транскрибты не кешируются скиллом локально, кроме случая «сохранить в файл» (Step 5c). Каждый запрос — свежий вызов tldv API. Это нормально, объёмы небольшие.
-- **API shape variations**: `tldv.sh meeting-list-mine` использует **схемо-независимый substring-фильтр** — ищет email рекрутера в JSON-представлении каждой встречи, независимо от того в каком поле tldv его хранит (`invitees[].email` / `participants[].address` / `attendees[].user.email` / etc.). Если в сводке `/meetings` участников нет (только metadata), скрипт автоматически делает enrichment-fallback: refetch каждой встречи через `/meetings/{id}` и применяет тот же фильтр к детальному ответу. На 50 встречах enrichment добавляет ~5-10 секунд, но только если pass-1 на summary не нашёл совпадений.
+- **Filter implementation**: `tldv.sh meeting-list-mine` использует точечный jq-фильтр по двум конкретным путям:
+  ```jq
+  (.organizer.email == $email) or
+  ((.invitees // []) | map(.email) | any(. == $email))
+  ```
+  Схема API verified против боевого endpoint (228 встреч, organizer всегда object, invitees всегда array). Никаких substring-эвристик — только exact match. False-positive невозможен.
 
-- **Hard scoping note**: общий tldv-токен (`ba@lunapastel.io` в нашем случае) видит ВСЕ командные звонки — потому что `ba@` добавлен в каждый. Поэтому мы не полагаемся на token-owner-based scoping (это было бы лазейкой), а явно фильтруем по email рекрутера в данных встречи. Если рекрутера в участниках нет — встреча не показывается.
+- **Hard scoping note**: общий tldv-токен (`ba@lunapastel.io` в нашем случае) видит ВСЕ командные звонки — потому что `ba@` добавлен в каждый звонок. Поэтому мы не полагаемся на token-owner-based scoping (это было бы лазейкой), а явно фильтруем по email рекрутера в `.organizer.email` или `.invitees[].email`. Если рекрутера в одном из этих двух мест нет — встреча не показывается.
 
-- **Diagnostics**: если `meeting-list-mine` возвращает странные результаты (например, чужие звонки или, наоборот, не показывает ваши), используй `scripts/tldv.sh meeting-list-raw --limit 5` чтобы посмотреть сырой ответ tldv API и понять структуру. Эта команда не фильтрует — только для дебага.
+- **Pagination**: tldv API лимитирует `?limit=` максимум 100. Скрипт пагинирует до `--max-pages` (default 3) страниц по 100, набирая `--limit` (default 20) релевантных встреч. Этого хватает чтобы найти все недавние свои встречи в воркспейсах с ~300 встреч/неделю.
+
+- **HTTP 403 на transcript/highlights**: tldv не отдаёт через API контент встреч, организованных пользователями на бесплатном плане. Тело: `{"name":"ForbiddenError","message":"This meeting was organized by a Free user and cannot be accessed via API."}`. Скилл проверяет это первым (см. Step 5) и направляет рекрутера в tldv UI по `.url`.
+
+- **Diagnostics**: если `meeting-list-mine` возвращает странные результаты, используй `scripts/tldv.sh meeting-list-raw --limit 5` чтобы посмотреть сырой ответ tldv API без фильтра. Эта команда служебная — в скилле не использовать.

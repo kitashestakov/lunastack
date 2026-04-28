@@ -5,45 +5,67 @@ set -euo pipefail
 # Usage: scripts/tldv.sh <subcommand> [args]
 # Config: ~/.luna-stack/config.yaml (reads tldv_api_token and email)
 #
-# Security invariant
-# ------------------
-# Subcommand `meeting-list-mine` ALWAYS filters the API response so only
-# meetings where the configured user's email is in the meeting's data
-# are returned. The /calls skill must use `meeting-list-mine`, never raw
-# `meeting-list`.
-#
-# IMPORTANT: at Luna Pastel the tldv account is a shared one (ba@lunapastel.io)
-# that gets invited to every team call, so the API token sees ALL team
-# meetings — not just the ones the token-owner participated in. We therefore
-# filter on the recruiter's own email being present in the meeting's
-# participant data, NOT on token ownership.
-#
-# Filter strategy (schema-independent)
-# ------------------------------------
-# Instead of guessing field names like invitees/participants/attendees and
-# assuming each has an .email key, we serialize each meeting object to its
-# JSON representation and check whether the recruiter's email appears as a
-# substring. This catches the email regardless of whether tldv stores it as
-# .invitees[].email, .participants[].address, .attendees[].user.email, etc.
-# False-positive risk (email mentioned in meeting title or transcript without
-# the person actually attending) is acceptable — the user re-confirms the
-# meeting before any save in /calls Step 3.
-#
-# Two-pass approach:
-#   1. Fast pass: filter the /meetings list response with the substring check.
-#   2. Enrichment fallback: if the list response doesn't include participant
-#      details (some APIs return only summaries), refetch each meeting via
-#      /meetings/{id} and re-apply the substring check. This makes N+1 calls
-#      but only when needed, and only against meetings the token can already
-#      see.
-#
 # API base / auth
 # ---------------
-# - https://pasta.tldv.io/v1alpha1 (tldv public API)
-# - Header: x-api-key: <token>
-# - Endpoints assumed: GET /meetings, /meetings/{id}, /meetings/{id}/transcript,
-#   /meetings/{id}/highlights. The list-array container is tried as
-#   .results / .data / .items / bare array.
+#   https://pasta.tldv.io/v1alpha1
+#   Header: x-api-key: <token>
+#
+# Schema (verified against the live API on 2026-04-28)
+# ----------------------------------------------------
+# GET /meetings?limit=N&page=N&query=KEYWORD
+#   {
+#     "page": 1, "pageSize": 50, "pages": 5, "total": 228,
+#     "results": [
+#       {
+#         "id": "string",
+#         "name": "string",
+#         "happenedAt": "Tue Apr 28 2026 16:22:49 GMT+0000 (Coordinated Universal Time)",  # JS Date
+#         "duration": 1053.146,                       # seconds
+#         "invitees": [{"name": "...", "email": "..."}],  # always array, may be []
+#         "organizer": {"name": "...", "email": "..."},   # always object
+#         "url": "https://tldv.io/app/meetings/{id}",
+#         "extraProperties": {"conferenceId": "..."}
+#       }
+#     ]
+#   }
+#   - ?query=KEYWORD: server-side substring filter on meeting name.
+#   - ?q=KEYWORD: ignored (no filtering).
+#
+# GET /meetings/{id}
+#   Same shape as a single result, plus possibly a `template` object.
+#   IMPORTANT: happenedAt is ISO 8601 here (e.g. "2026-04-28T12:45:00.000Z"),
+#   not the JS Date string used in the list response.
+#
+# GET /meetings/{id}/transcript
+#   {
+#     "id": "transcript-id",
+#     "meetingId": "meeting-id",
+#     "data": [{"startTime": 0, "endTime": 147, "speaker": "...", "text": "..."}]
+#   }
+#   - May return HTTP 403 ForbiddenError if the meeting's organizer is on a
+#     free tldv plan. Body: {"name":"ForbiddenError","message":"This meeting
+#     was organized by a Free user and cannot be accessed via API."}
+#
+# GET /meetings/{id}/highlights
+#   {
+#     "meetingId": "meeting-id",
+#     "data": [{
+#       "text": "...",
+#       "startTime": 0,
+#       "source": "auto",
+#       "topic": {"title": "...", "summary": "..."}
+#     }]
+#   }
+#   - Same 403 caveat as transcript.
+#
+# Security invariant
+# ------------------
+# `meeting-list-mine` returns ONLY meetings where the configured user's email
+# is in .organizer.email or .invitees[].email. The shared API token (from
+# 1Password "tldv Token") sees ALL team meetings because ba@lunapastel.io is
+# invited to every call — so we MUST filter on the recruiter's own email
+# rather than rely on token-owner scoping. The /calls skill must use
+# `meeting-list-mine`, never raw `meeting-list-raw`.
 
 CONFIG_FILE="$HOME/.luna-stack/config.yaml"
 API_BASE="https://pasta.tldv.io/v1alpha1"
@@ -71,8 +93,7 @@ if [ -z "$USER_EMAIL" ]; then
   exit 1
 fi
 
-# --- API call helper ---
-
+# Strict GET: exit non-zero on HTTP >= 400.
 api_get() {
   local path="$1"
   local response
@@ -80,49 +101,54 @@ api_get() {
     -X GET "${API_BASE}${path}" \
     -H "x-api-key: ${API_TOKEN}" \
     -H "Accept: application/json")
-
-  local http_code
+  local http_code body
   http_code=$(echo "$response" | tail -1)
-  local body
   body=$(echo "$response" | sed '$d')
-
   if [ "$http_code" -ge 400 ]; then
     echo "tldv API error ($http_code): $body" >&2
     exit 1
   fi
-
   echo "$body"
 }
 
-# --- Subcommands ---
+# Soft GET: return body verbatim regardless of HTTP code. Used for transcript /
+# highlights so the caller can detect the 403 ForbiddenError (free-plan
+# organizer) and surface it as a friendly message instead of failing the skill.
+api_get_soft() {
+  local path="$1"
+  curl -s \
+    -X GET "${API_BASE}${path}" \
+    -H "x-api-key: ${API_TOKEN}" \
+    -H "Accept: application/json"
+}
 
 if [ $# -lt 1 ]; then
   cat >&2 <<EOF
 Usage: scripts/tldv.sh <subcommand> [args]
 
 Subcommands:
-  meeting-list-mine [--limit N] [--query Q]
-                              List meetings where the configured user is a participant.
+  meeting-list-mine [--limit N] [--api-limit N] [--query Q]
+                              List meetings where the configured user is in
+                              .organizer.email or .invitees[].email.
+                              --limit:     how many to return after filtering (default 20).
+                              --api-limit: how many to fetch from API before filtering (default 200).
+                              --query:     server-side substring filter on meeting name.
                               This is the canonical command for skills.
-  meeting-get <meeting_id>    Get meeting details (use only after meeting-list-mine confirmed access).
+  meeting-get <meeting_id>    Get meeting details (full object, including invitees/organizer).
   meeting-transcript <meeting_id>
-                              Get transcript text.
+                              Get transcript JSON. Returns ForbiddenError body
+                              if the organizer is on a free tldv plan — caller
+                              must check for it.
   meeting-highlights <meeting_id>
-                              Get AI highlights / summary.
+                              Get AI highlights JSON. Same 403 caveat as transcript.
   meeting-list-raw [--limit N] [--query Q]
-                              Diagnostic: raw, unfiltered tldv response. Use only
-                              for debugging when meeting-list-mine returns wrong
-                              results — to inspect the actual JSON shape.
+                              Diagnostic: raw unfiltered list. Do NOT use in skills.
   whoami                      Print configured email and a token sanity check.
 EOF
   exit 1
 fi
 
 cmd="$1"; shift
-
-# Returns the JSON array of meetings from a raw tldv list response,
-# trying common container fields.
-extract_meetings='((.results // .data // .items // (if type == "array" then . else [] end)))'
 
 case "$cmd" in
   whoami)
@@ -131,16 +157,16 @@ case "$cmd" in
     ;;
 
   meeting-list-raw)
-    limit=50
+    api_limit=50
     query=""
     while [ $# -gt 0 ]; do
       case "$1" in
-        --limit) limit="$2"; shift 2 ;;
+        --limit) api_limit="$2"; shift 2 ;;
         --query) query="$2"; shift 2 ;;
         *) shift ;;
       esac
     done
-    qs="?limit=${limit}"
+    qs="?limit=${api_limit}"
     if [ -n "$query" ]; then
       qs="${qs}&query=$(printf '%s' "$query" | jq -sRr @uri)"
     fi
@@ -148,61 +174,63 @@ case "$cmd" in
     ;;
 
   meeting-list-mine)
-    # SECURITY INVARIANT: only return meetings where USER_EMAIL appears
-    # somewhere in the meeting's data. /calls must use this command, not
-    # the raw API. The substring check is applied here in shell so it cannot
-    # be bypassed from the skill prompt.
-    limit=50
+    # SECURITY INVARIANT: only return meetings where USER_EMAIL is in
+    # .organizer.email or .invitees[].email — exact match on the verified
+    # tldv schema. No substring matching, no enrichment. /calls must use
+    # this command, not meeting-list-raw.
+    #
+    # tldv API caps `limit` at 100. To find the recruiter's meetings we may
+    # need to scan more — we paginate up to MAX_PAGES of 100 meetings each,
+    # filtering as we go, until we collect display_limit hits or run out.
+    page_size=100
+    max_pages=3
+    display_limit=20
     query=""
     while [ $# -gt 0 ]; do
       case "$1" in
-        --limit) limit="$2"; shift 2 ;;
+        --limit) display_limit="$2"; shift 2 ;;
+        --max-pages) max_pages="$2"; shift 2 ;;
         --query) query="$2"; shift 2 ;;
         *) shift ;;
       esac
     done
 
-    qs="?limit=${limit}"
+    query_qs=""
     if [ -n "$query" ]; then
-      qs="${qs}&query=$(printf '%s' "$query" | jq -sRr @uri)"
+      query_qs="&query=$(printf '%s' "$query" | jq -sRr @uri)"
     fi
 
-    raw=$(api_get "/meetings${qs}")
+    # Accumulate filtered hits across pages.
+    filtered="[]"
+    current=1
+    while [ "$current" -le "$max_pages" ]; do
+      qs="?limit=${page_size}&page=${current}${query_qs}"
+      raw=$(api_get "/meetings${qs}")
+      page_hits=$(echo "$raw" | jq --arg email "$USER_EMAIL" '
+        .results
+        | map(select(
+            (.organizer.email // "") == $email
+            or
+            ((.invitees // []) | map(.email // "") | any(. == $email))
+          ))
+      ')
+      filtered=$(jq -s '.[0] + .[1]' <(echo "$filtered") <(echo "$page_hits"))
 
-    # Pass 1 — substring filter on the list response itself.
-    # Schema-independent: catches the email in any field name (invitees,
-    # participants, attendees, organizer, address, user.email, etc.).
-    pass1=$(echo "$raw" | jq --arg email "$USER_EMAIL" "
-      ${extract_meetings}
-      | map(select(tostring | contains(\$email)))
-    ")
-
-    pass1_count=$(echo "$pass1" | jq 'length')
-
-    if [ "$pass1_count" -gt 0 ]; then
-      echo "$pass1"
-      exit 0
-    fi
-
-    # Pass 2 — enrichment fallback. The list endpoint may return only
-    # summaries without participant details; refetch each meeting individually
-    # and apply the same substring check against the detailed object.
-    ids=$(echo "$raw" | jq -r "
-      ${extract_meetings}
-      | .[] | (.id // ._id // .meetingId // empty)
-    ")
-
-    enriched="[]"
-    while IFS= read -r id; do
-      [ -z "$id" ] && continue
-      detail=$(api_get "/meetings/${id}" 2>/dev/null || echo "null")
-      [ "$detail" = "null" ] && continue
-      if echo "$detail" | jq --arg email "$USER_EMAIL" -e 'tostring | contains($email)' >/dev/null 2>&1; then
-        enriched=$(jq -s '.[0] + [.[1]]' <(echo "$enriched") <(echo "$detail"))
+      total_hits=$(echo "$filtered" | jq 'length')
+      if [ "$total_hits" -ge "$display_limit" ]; then
+        break
       fi
-    done <<< "$ids"
 
-    echo "$enriched"
+      # Stop if we've reached the last page from the API's perspective.
+      total_pages=$(echo "$raw" | jq -r '.pages // 1')
+      if [ "$current" -ge "$total_pages" ]; then
+        break
+      fi
+
+      current=$((current + 1))
+    done
+
+    echo "$filtered" | jq --argjson limit "$display_limit" '.[0:$limit]'
     ;;
 
   meeting-get)
@@ -218,7 +246,9 @@ case "$cmd" in
       echo "Usage: scripts/tldv.sh meeting-transcript <meeting_id>" >&2
       exit 1
     fi
-    api_get "/meetings/$1/transcript"
+    # Soft GET — caller checks for "ForbiddenError" in the body and explains
+    # the free-plan-organizer caveat to the recruiter.
+    api_get_soft "/meetings/$1/transcript"
     ;;
 
   meeting-highlights)
@@ -226,7 +256,7 @@ case "$cmd" in
       echo "Usage: scripts/tldv.sh meeting-highlights <meeting_id>" >&2
       exit 1
     fi
-    api_get "/meetings/$1/highlights"
+    api_get_soft "/meetings/$1/highlights"
     ;;
 
   *)
