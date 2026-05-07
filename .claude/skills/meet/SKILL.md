@@ -21,9 +21,9 @@ Read the file `ETHOS.md` for tone of voice guidance.
 
 ## Pre-check 0: Google Calendar connector
 
-Этот скилл требует подключённого Google Calendar в Claude Desktop. Тулы коннектора видны в этой сессии — посмотри список доступных tool calls и найди группу для Google Calendar (типичные имена: `mcp__claude_ai_Google_Calendar__*`, `mcp__google_calendar__*` или похожие). Используй именно их — не пытайся ходить через Bash/curl.
+Этот скилл требует подключённого Google Calendar в Claude Desktop. Тулы коннектора видны в этой сессии — посмотри список доступных tool calls и найди группу для Google Calendar. Имена тулов — `create_event`, `list_events`, `list_calendars`, `update_event`, `respond_to_event`, `suggest_time`, `get_event`, `delete_event`. У каждого рекрутера префикс может отличаться (Claude Code присваивает UUID per-installation), поэтому ищи по суффиксу (`*__create_event` и т.д.), а не по полному имени. Используй именно эти тулы — не пытайся ходить через Bash/curl.
 
-**Если коннектор НЕ подключён** (тулов в сессии нет) — выведи как plain text и стоп:
+**Если коннектор НЕ подключён** (тулов с этими суффиксами в сессии нет) — выведи как plain text и стоп:
 
 ```
 Не вижу подключённый Google Calendar. Подключи разово:
@@ -35,6 +35,8 @@ Read the file `ETHOS.md` for tone of voice guidance.
 ```
 
 Не предлагай альтернатив (curl, Bash). Без коннектора скилл не работает.
+
+**Permission popups.** При первом запуске `/meet` Claude Code может показать popup «Allow this tool?» на каждый тул Google Calendar. Это нормально — нажми «Always allow». Claude Code запомнит выбор в `~/.claude/settings.local.json` и больше спрашивать не будет.
 
 ## Pre-check: Vacancy session binding
 
