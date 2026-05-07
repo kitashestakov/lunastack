@@ -42,7 +42,7 @@ If the file doesn't exist, tell the recruiter: «Конфиг не найден.
 
   «Эта сессия уже привязана к вакансии [Client] — [Position]. Чтобы начать работу с другой вакансией, создай новую сессию (нажми +) и набери /vacancy.»
 
-- Other skills (`/briefing`, `/vacancy-card`, `/research`, `/outreach`, `/screening`, `/summary`, `/client-update`, `/funnel-review`, `/handoff`) require an active vacancy context. If there is none, tell the recruiter: «Сначала набери /vacancy, чтобы выбрать или создать вакансию.»
+- Other skills (`/briefing`, `/vacancy-card`, `/research`, `/outreach`, `/screening`, `/summary`, `/client-update`, `/funnel-review`, `/handoff`, `/meet`) require an active vacancy context. If there is none, tell the recruiter: «Сначала набери /vacancy, чтобы выбрать или создать вакансию.»
 
 ## Notion Reference
 

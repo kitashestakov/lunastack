@@ -21,6 +21,8 @@ Luna Stack is a set of Claude Code skills for the Luna Pastel recruiting agency.
 - `/screening` — Evaluate candidate against vacancy criteria and Notion methodology
 - `/summary` — Generate structured candidate summary after screening, ready for Telegram to client
 - `/client-update` — Generate progress update message for the client with Huntflow pipeline data
+- `/calls` — Access tldv call recordings: list past meetings, fetch transcripts and AI highlights, save transcripts to vacancy cards in Notion. Used standalone and as a sub-step inside /briefing, /screening, /summary
+- `/meet` — Create a Google Calendar event for a call (screening, client interview, briefing). Sends invite to candidate or client, generates Meet link, adds tldv noteтейкер `ba@lunapastel.io`, moves the candidate to the right Huntflow stage. Designed for one-shot input («поставь скрининг с Иваном завтра 15:00») with a single confirmation step. Default timezone Europe/Madrid (Barcelona). Note: name picked to avoid collision with built-in `/schedule` (which creates remote AI agents)
 - `/funnel-review` — Analyze recruitment funnel: conversion rates, bottlenecks, rejection patterns, recommendations
 - `/handoff` — Transfer vacancy to another recruiter with structured summary
 - `/luna-upgrade` — Update skills via git pull, show what changed

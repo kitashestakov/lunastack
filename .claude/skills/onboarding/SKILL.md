@@ -55,6 +55,21 @@ Wait for confirmation. Do NOT use AskUserQuestion.
 
 Note: Notion access uses the built-in Claude Desktop MCP connector (OAuth). No personal token needed — the connector handles auth.
 
+### Step 3.5: Connect Google Calendar
+
+Output as plain text, then STOP and wait:
+
+«Подключи Google Calendar — нужно для скилла /meet (назначение звонков с автоматическим Meet и инвайтами):
+→ Settings → Connectors → Google Calendar → Connect
+→ Выбери свой рабочий аккаунт Luna Pastel
+→ Подтверди разрешения (создание событий + чтение для проверки занятости)
+
+Когда подключишь — напиши «Готово».»
+
+Wait for the user to type «Готово». Do NOT use AskUserQuestion.
+
+Note: Google Calendar access uses the built-in Claude Desktop MCP connector (OAuth). No personal token needed. Если у рекрутера нет рабочего Google аккаунта — пропускаем шаг, но `/meet` работать не будет до подключения.
+
 ### Step 4: Ask name
 
 Output as plain text, then STOP and wait:
@@ -197,6 +212,7 @@ Show available skills:
 • `/summary` — оформить саммари кандидата после скрининга
 • `/client-update` — сгенерировать апдейт клиенту по прогрессу
 • `/calls` — записи звонков из tldv: транскрибты, саммари, сохранение в карточку вакансии
+• `/meet` — назначить звонок: создаёт ивент в Google Calendar с инвайтом, Meet ссылкой, ноутейкером (название выбрано так, потому что `/schedule` зарезервирован встроенным скиллом Claude Code)
 • `/funnel-review` — анализ воронки: конверсии, узкие места, рекомендации
 • `/handoff` — передать вакансию другому рекрутеру
 • `/luna-upgrade` — обновить Luna Stack
